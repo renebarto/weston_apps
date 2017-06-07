@@ -14,11 +14,17 @@ set(SOURCE_FILES
     Registry.cpp
     Display.cpp
     ShmPool.cpp
+    Surface.cpp
+    Buffer.cpp
+    Pointer.cpp
     helpers.c)
 set(HEADER_FILES
     Registry.h
     Display.h
     ShmPool.h
+    Surface.h
+    Buffer.h
+    Pointer.h
     helpers.h)
 set(DATA_FILES
         images.bin)

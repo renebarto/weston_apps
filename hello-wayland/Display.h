@@ -30,27 +30,17 @@ public:
 
     wl_display * Get() const { return _display; }
 
+    static wl_compositor * Compositor() { return _compositor; }
     static wl_shm * Shm() { return _shm; }
+    static wl_shell * Shell() { return _shell; }
+    static wl_seat * Seat() { return _seat; }
+    static wl_pointer * Pointer() { return _pointer; }
 
 private:
     static void RegistryGlobalAdd(void *data,
                                   struct wl_registry *registry, uint32_t name,
-                                  const char *interface, uint32_t version)
-    {
-        if (strcmp(interface, wl_compositor_interface.name) == 0)
-            _compositor = reinterpret_cast<wl_compositor *>(wl_registry_bind(registry, name, &wl_compositor_interface, std::min(version, uint32_t(4))));
-        else if (strcmp(interface, wl_shm_interface.name) == 0)
-            _shm = reinterpret_cast<wl_shm *>(wl_registry_bind(registry, name, &wl_shm_interface, std::min(version, uint32_t(1))));
-        else if (strcmp(interface, wl_shell_interface.name) == 0)
-            _shell = reinterpret_cast<wl_shell *>(wl_registry_bind(registry, name, &wl_shell_interface, std::min(version, uint32_t(1))));
-        else if (strcmp(interface, wl_seat_interface.name) == 0) {
-            _seat = reinterpret_cast<wl_seat *>(wl_registry_bind(registry, name, &wl_seat_interface, std::min(version, uint32_t(2))));
-            _pointer = wl_seat_get_pointer(_seat);
-//            wl_pointer_add_listener(_pointer, &_pointerListener, NULL);
-        }
-    }
-
-    static void RegistryGlobalRemove(void * a, struct wl_registry *b, uint32_t c) { }
+                                  const char *interface, uint32_t version);
+    static void RegistryGlobalRemove(void * a, struct wl_registry *b, uint32_t c);
 
     static const wl_registry_listener _registryListener;
 //    static constexpr wl_pointer_listener _pointerListener = {

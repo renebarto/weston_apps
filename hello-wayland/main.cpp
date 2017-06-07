@@ -9,18 +9,11 @@
 #include "Registry.h"
 #include "Display.h"
 #include "ShmPool.h"
+#include "Surface.h"
+#include "Buffer.h"
+#include "Pointer.h"
 
 using namespace std;
-
-namespace Wayland
-{
-
-class Surface
-{
-
-};
-
-}
 
 static const unsigned WIDTH = 320;
 static const unsigned HEIGHT = 200;
@@ -35,17 +28,15 @@ void on_button(uint32_t button)
 {
     done = true;
 }
+
 int main(int argc, char * argv[])
 {
-    struct wl_buffer *buffer;
-    struct wl_shell_surface *surface;
-    int image;
-
     Wayland::Display display;
 
-    display.Setup();
+    if (!display.Setup())
+        return EXIT_FAILURE;
 
-    image = open("images.bin", O_RDWR);
+    int image = open("images.bin", O_RDWR);
 
     if (image < 0)
     {
@@ -55,12 +46,19 @@ int main(int argc, char * argv[])
 
     Wayland::ShmPool pool;
     pool.Create(image);
-    surface = hello_create_surface();
-    buffer = hello_create_buffer(pool.Get(), WIDTH, HEIGHT);
-    hello_bind_buffer(buffer, surface);
-    hello_set_cursor_from_pool(pool.Get(), CURSOR_WIDTH,
-                               CURSOR_HEIGHT, CURSOR_HOT_SPOT_X, CURSOR_HOT_SPOT_Y);
-    hello_set_button_callback(surface, on_button);
+    Wayland::ShellSurface surface;
+    surface.Create(Wayland::Display::Compositor(), Wayland::Display::Shell());
+    Wayland::Buffer buffer;
+    buffer.Create(pool, WIDTH, HEIGHT);
+    buffer.Bind(surface);
+    Wayland::Pointer pointer(display.Pointer());
+    if (!pointer.SetFromPool(display.Compositor(), pool, CURSOR_WIDTH, CURSOR_HEIGHT, CURSOR_HOT_SPOT_X, CURSOR_HOT_SPOT_Y))
+    {
+        cerr << "Error setting pointer" << endl;
+        return EXIT_FAILURE;
+    }
+
+    surface.SetButtonCallback(on_button);
 
     while (!done)
     {
@@ -73,9 +71,9 @@ int main(int argc, char * argv[])
 
     cerr << "Exiting sample wayland client..." << endl;
 
-    hello_free_cursor();
-    hello_free_buffer(buffer);
-    hello_free_surface(surface);
+    pointer.Release();
+    buffer.Free();
+    surface.Destroy();
     pool.Free();
     close(image);
 

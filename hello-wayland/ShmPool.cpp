@@ -7,7 +7,15 @@
 namespace Wayland
 {
 
-bool ShmPool::PoolData::Create(size_t size, int fd)
+PoolData::PoolData()
+    : _fd()
+    , _memory()
+    , _capacity()
+    , _size()
+{
+}
+
+bool PoolData::Create(size_t size, int fd)
 {
     _capacity = size;
     _size = 0;
@@ -20,19 +28,23 @@ bool ShmPool::PoolData::Create(size_t size, int fd)
     return true;
 }
 
-ShmPool::PoolData::~PoolData()
+PoolData::~PoolData()
 {
     munmap(_memory, _capacity);
+    _capacity = {};
+    _size = {};
+    _fd = {};
+    _memory = {};
 }
 
-bool ShmPool::Create(int fd) {
-    PoolData *data;
+bool ShmPool::Create(int fd)
+{
     struct stat stat;
 
     if (fstat(fd, &stat) != 0)
         return NULL;
 
-    data = new PoolData();
+    PoolData * data = new PoolData();
 
     if (!data->Create(static_cast<size_t>(stat.st_size), fd))
     {
@@ -55,12 +67,24 @@ bool ShmPool::Create(int fd) {
 
 void ShmPool::Free()
 {
-    PoolData *data;
-
-    data = reinterpret_cast<PoolData *>(wl_shm_pool_get_user_data(_pool));
+    PoolData * data = reinterpret_cast<PoolData *>(wl_shm_pool_get_user_data(_pool));
     wl_shm_pool_destroy(_pool);
     delete data;
     _pool = nullptr;
+}
+
+wl_buffer * ShmPool::CreateBuffer(unsigned width, unsigned height, uint32_t format)
+{
+    PoolData * data = reinterpret_cast<PoolData *>(wl_shm_pool_get_user_data(_pool));
+    wl_buffer *buffer = wl_shm_pool_create_buffer(_pool, data->Size(), width, height,
+                                                  width*sizeof(pixel), format);
+
+    if (buffer == nullptr)
+        return nullptr;
+
+    data->Size() += width*height*sizeof(pixel);
+
+    return buffer;
 }
 
 } // namespace Wayland

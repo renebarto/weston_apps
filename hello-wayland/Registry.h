@@ -14,8 +14,10 @@ public:
     ~Registry()
     {
         wl_registry_destroy(_registry);
+        _registry = nullptr;
     }
-    void AddListener(wl_registry_listener const & registryListener) {
+    void AddListener(wl_registry_listener const & registryListener)
+    {
         wl_registry_add_listener(_registry, &registryListener, nullptr);
     }
 
