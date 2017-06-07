@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(weston-apps)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 include(platform)
 
@@ -49,4 +49,5 @@ message(STATUS "Output base directory: " ${OUTPUT_BASE_DIR})
 add_subdirectory(weston-simple-demo)
 add_subdirectory(weston-simple-gl)
 add_subdirectory(weston-texture)
-
+add_subdirectory(hello-wayland)
+#add_subdirectory(ogl-OpenGL-tutorial_0015_21)
