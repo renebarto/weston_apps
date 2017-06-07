@@ -1,68 +1,113 @@
-#include <stdio.h>
-#include <stdlib.h>
-
+#include <cstdlib>
+#include <string>
 #include <GL/glew.h>
+#include "Application.h"
+#include "Shader.h"
 
-#include <glfw3.h>
-GLFWwindow* window;
+using namespace std;
+using namespace OpenGL;
 
-#include <glm/glm.hpp>
-using namespace glm;
-
-int main( void )
+class App : public Application
 {
-	// Initialise GLFW
-	if( !glfwInit() )
-	{
-		fprintf( stderr, "Failed to initialize GLFW\n" );
-		getchar();
-		return -1;
-	}
+public:
+    App(int argc, char * argv[])
+        : Application()
+        , _argc(argc)
+        , _argv(argv)
+        , _applicationPath()
+        , _programID()
+        , _vertexPosition_modelSpaceID()
+        , _vertexBuffer()
+        , _offset()
+    {
+        _applicationPath = argv[0];
+        size_t pathSeparatorIndex = _applicationPath.find_last_of("\\/");
+        if (pathSeparatorIndex != string::npos)
+            _applicationPath = _applicationPath.substr(0, pathSeparatorIndex);
+    }
+    bool SetupApplication() override
+    {
+        // Create and compile our GLSL program from the shaders
+        _programID = LoadShaders("SimpleVertexShader.vertexshader",
+                                 "SimpleFragmentShader.fragmentshader");
+        if (!_programID)
+            return false;
 
-    glfwWindowHint(GLFW_SAMPLES, 4);
-	glfwWindowHint(GLFW_RESIZABLE,GL_FALSE);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+        // Get a handle for our buffers
+        _vertexPosition_modelSpaceID = glGetAttribLocation(_programID, "vertexPosition_modelspace");
+        glGenBuffers(1, &_vertexBuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(_vertexBufferData), _vertexBufferData, GL_DYNAMIC_DRAW);
+        return true;
+    }
+    void Draw() override
+    {
+        // Clear the screen
+        glClear( GL_COLOR_BUFFER_BIT );
 
+        // Use our shader
+        glUseProgram(_programID);
 
-    // Open a window and create its OpenGL context
-	window = glfwCreateWindow( 1024, 768, "Playground", NULL, NULL);
-	if( window == NULL ){
-		fprintf( stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n" );
-		getchar();
-		glfwTerminate();
-		return -1;
-	}
-	glfwMakeContextCurrent(window);
+        // 1rst attribute buffer : vertices
+        glEnableVertexAttribArray(_vertexPosition_modelSpaceID);
+        glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
 
-	// Initialize GLEW
-	if (glewInit() != GLEW_OK) {
-		fprintf(stderr, "Failed to initialize GLEW\n");
-		getchar();
-		glfwTerminate();
-		return -1;
-	}
+        _offset += 0.01F;
+        if (_offset > 2.0F)
+            _offset -= 2.0F;
+        GLfloat vertexBuffer[9];
+        int offset = 0;
+        vertexBuffer[offset++] = -1.0F;
+        vertexBuffer[offset++] = -1.0F + _offset;
+        vertexBuffer[offset++] = 0.0F;
+        vertexBuffer[offset++] = 1.0F;
+        vertexBuffer[offset++] = -1.0F + _offset;
+        vertexBuffer[offset++] = 0.0F;
+        vertexBuffer[offset++] = 0.0F;
+        vertexBuffer[offset++] = 1.0F;
+        vertexBuffer[offset++] = 0.0F;
+        glBufferData(GL_ARRAY_BUFFER, sizeof(_vertexBufferData), vertexBuffer, GL_DYNAMIC_DRAW);
+        glVertexAttribPointer(
+            _vertexPosition_modelSpaceID, // The attribute we want to configure
+            3,                  // size
+            GL_FLOAT,           // type
+            GL_FALSE,           // normalized?
+            0,                  // stride
+            (void*)0            // array buffer offset
+        );
 
-	// Ensure we can capture the escape key being pressed below
-	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+        // Draw the triangle !
+        glDrawArrays(GL_TRIANGLES, 0, 3); // 3 indices starting at 0 -> 1 triangle
 
-	// Dark blue background
-	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+        glDisableVertexAttribArray(_vertexPosition_modelSpaceID);
+    }
+    
+private:
+    int _argc;
+    char ** _argv;
+    std::string _applicationPath;
+    GLuint _programID;
+    GLint _vertexPosition_modelSpaceID;
+    GLuint _vertexBuffer;
+    GLfloat _offset;
+    static const GLfloat _vertexBufferData[9];
+};
 
-    do{
-		// Draw nothing, see you in tutorial 2 !
+const GLfloat App::_vertexBufferData[] =
+    {
+        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        0.0f,  1.0f, 0.0f,
+    };
 
-        // Swap buffers
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-
-    } // Check if the ESC key was pressed or the window was closed
-	while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
-		   glfwWindowShouldClose(window) == 0 );
-
-    // Close OpenGL window and terminate GLFW
-    glfwTerminate();
-
-    return 0;
+int main(int argc, char * argv[])
+{
+    App app(argc, argv);
+    if (!app.Initialize())
+        return EXIT_FAILURE;
+    if (!app.Run())
+        return EXIT_FAILURE;
+    app.Terminate();
+    return EXIT_SUCCESS;
 }
 

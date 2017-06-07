@@ -22,9 +22,9 @@ add_subdirectory (external)
 
 # On Visual 2005 and above, this module can set the debug working directory
 cmake_policy(SET CMP0026 OLD)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/rpavlik-cmake-modules-fe2273")
-include(CreateLaunchers)
-include(MSVCMultipleProcessCompile) # /MP
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/rpavlik-cmake-modules-fe2273")
+include(external/rpavlik-cmake-modules-fe2273/CreateLaunchers.cmake)
+include(external/rpavlik-cmake-modules-fe2273/MSVCMultipleProcessCompile.cmake) # /MP
 
 if(INCLUDE_DISTRIB)
 	add_subdirectory(distrib)
@@ -515,8 +515,10 @@ create_target_launcher(tutorial17_rotations WORKING_DIRECTORY "${CMAKE_CURRENT_S
 # User playground
 add_executable(playground 
 	playground/playground.cpp
-	common/shader.cpp
-	common/shader.hpp
+	playground/Application.cpp
+	playground/Application.h
+	playground/Shader.cpp
+	playground/Shader.h
 )
 target_link_libraries(playground
 	${ALL_LIBS}
