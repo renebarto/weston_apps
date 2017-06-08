@@ -1,0 +1,9 @@
+libdir=/home/rene/workspace/graphics/wayland-build/build/wayland-1.13.0/src/.libs
+includedir=/home/rene/workspace/graphics/wayland-build/build/wayland-1.13.0/src
+protocoldir=/home/rene/workspace/graphics/wayland-build/build/wayland-1.13.0/protocol
+ 
+Name: Wayland Server
+Description: Server side implementation of the Wayland protocol (not installed)
+Version: 1.13.0
+Cflags: -I${includedir} -I${protocoldir}
+Libs: -L${libdir} -lwayland-server

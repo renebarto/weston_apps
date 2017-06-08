@@ -1,0 +1,6 @@
+pkgdatadir=/home/rene/workspace/graphics/wayland-build/build/wayland-1.13.0
+wayland_scanner=/home/rene/workspace/graphics/wayland-build/build/wayland-1.13.0/wayland-scanner
+ 
+Name: Wayland Scanner
+Description: Wayland scanner (not installed)
+Version: 1.13.0
