@@ -11,6 +11,7 @@ message(STATUS ${WAYLAND_CLIENT_LIBRARIES})
 
 set(SOURCE_FILES
     main.cpp
+    Compositor.cpp
     Registry.cpp
     Display.cpp
     ShmPool.cpp
@@ -19,6 +20,7 @@ set(SOURCE_FILES
     Pointer.cpp
     helpers.c)
 set(HEADER_FILES
+    Compositor.h
     Registry.h
     Display.h
     ShmPool.h

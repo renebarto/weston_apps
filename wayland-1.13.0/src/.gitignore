@@ -1,0 +1,8 @@
+wayland-version.h
+wayland-client-uninstalled.pc
+wayland-client.pc
+wayland-scanner-uninstalled.pc
+wayland-scanner.pc
+wayland-server-uninstalled.pc
+wayland-server.pc
+wayland.dtd.embed

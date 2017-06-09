@@ -34,9 +34,7 @@ public:
     bool SetFromPool(wl_compositor * compositor, ShmPool & pool,
                      unsigned width, unsigned height,
                      int32_t hotspotX, int32_t hotspotY);
-    bool Set(wl_compositor * compositor, ShmPool & pool,
-                     unsigned width, unsigned height,
-                     int32_t hotspotX, int32_t hotspotY);
+
     void Release();
 
 private:

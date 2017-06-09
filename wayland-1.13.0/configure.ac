@@ -87,17 +87,9 @@ AC_ARG_ENABLE([dtd-validation],
 	      [],
 	      [enable_dtd_validation=yes])
 
-AC_ARG_ENABLE([tests],
-	      [AC_HELP_STRING([--disable-tests],
-			      [Disable compilation of test programs])],
-	      [],
-	      [enable_tests=yes])
-
 AM_CONDITIONAL(USE_HOST_SCANNER, test "x$with_host_scanner" = xyes)
 
 AM_CONDITIONAL(ENABLE_LIBRARIES, test "x$enable_libraries" = xyes)
-
-AM_CONDITIONAL(ENABLE_TESTS, test "x$enable_tests" = "yes")
 
 AC_ARG_WITH(icondir, [  --with-icondir=<dir>    Look for cursor icons here],
 		     [  ICONDIR=$withval],

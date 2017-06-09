@@ -33,24 +33,17 @@
 
 /* from: http://www.linuxjournal.com/content/embedding-file-executable-aka-hello-world-version-5967#comment-348129 */
 
-#ifdef __USER_LABEL_PREFIX__
-#define CONCAT1(a, b) CONCAT2(a, b)
-#define CONCAT2(a, b) a ## b
-#define SYM(x) CONCAT1 (__USER_LABEL_PREFIX__, x)
-#else
-#endif
-
 .macro binfile name file
 	.p2align 2
-	.globl SYM(\name\()_begin)
-SYM(\name\()_begin):
+	.globl \name\()_begin
+\name\()_begin:
 	.incbin "\file"
-SYM(\name\()_end):
+\name\()_end:
 	.byte 0
 	.p2align 2
-	.globl SYM(\name\()_len)
-SYM(\name\()_len):
-	.int (SYM(\name\()_end) - SYM(\name\()_begin))
+	.globl \name\()_len
+\name\()_len:
+	.int (\name\()_end - \name\()_begin)
 .endm
 
 .section .rodata

@@ -3,11 +3,13 @@
 #include <string.h>
 #include <iostream>
 #include <wayland-client.h>
+#include "IRegistryListener.h"
 
 namespace Wayland
 {
 
-class Display
+class Display :
+    public IRegistryListener
 {
 public:
     Display() {}
@@ -37,12 +39,13 @@ public:
     static wl_pointer * Pointer() { return _pointer; }
 
 private:
-    static void RegistryGlobalAdd(void *data,
-                                  struct wl_registry *registry, uint32_t name,
-                                  const char *interface, uint32_t version);
-    static void RegistryGlobalRemove(void * a, struct wl_registry *b, uint32_t c);
+    virtual void RegistryCallbackGlobalAdd(wl_registry * wl_registry,
+                                           uint32_t name,
+                                           const char * interface,
+                                           uint32_t version) override final;
+    virtual void RegistryCallbackGlobalRemove(wl_registry * wl_registry,
+                                              uint32_t name) override final;
 
-    static const wl_registry_listener _registryListener;
 //    static constexpr wl_pointer_listener _pointerListener = {
 //        .enter = pointer_enter,
 //        .leave = pointer_leave,

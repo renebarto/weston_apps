@@ -1,6 +1,4 @@
 #include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <zconf.h>
 #include <iostream>
 #include <wayland-client.h>
@@ -24,7 +22,7 @@ static const int32_t CURSOR_HOT_SPOT_Y = 35;
 
 static bool done = false;
 
-void on_button(uint32_t button)
+void OnButtonPressed(uint32_t button)
 {
     done = true;
 }
@@ -58,7 +56,7 @@ int main(int argc, char * argv[])
         return EXIT_FAILURE;
     }
 
-    surface.SetButtonCallback(on_button);
+    surface.SetButtonCallback(OnButtonPressed);
 
     while (!done)
     {

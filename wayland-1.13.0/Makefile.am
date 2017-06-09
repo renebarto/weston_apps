@@ -143,7 +143,7 @@ libwayland_cursor_la_CFLAGS =			\
 	-I$(top_srcdir)/src			\
 	-DICONDIR=\"$(ICONDIR)\"
 
-if ENABLE_TESTS
+
 built_test_programs =				\
 	array-test				\
 	client-test				\
@@ -258,7 +258,6 @@ os_wrappers_test_LDADD = libtest-runner.la
 
 exec_fd_leak_checker_SOURCES = tests/exec-fd-leak-checker.c
 exec_fd_leak_checker_LDADD = libtest-runner.la
-endif
 
 EXTRA_DIST += tests/scanner-test.sh			\
 	tests/data/example.xml				\

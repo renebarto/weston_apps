@@ -1,25 +1,20 @@
 #pragma once
 
-#include <wayland-client.h>
+struct wl_display;
+struct wl_registry;
 
 namespace Wayland
 {
 
 class Display;
+class IRegistryListener;
 
 class Registry
 {
 public:
-    Registry(const Display & display);
-    ~Registry()
-    {
-        wl_registry_destroy(_registry);
-        _registry = nullptr;
-    }
-    void AddListener(wl_registry_listener const & registryListener)
-    {
-        wl_registry_add_listener(_registry, &registryListener, nullptr);
-    }
+    Registry(wl_display * display);
+    ~Registry();
+    void AddListener(IRegistryListener const * registryListener);
 
 private:
     wl_registry * _registry;

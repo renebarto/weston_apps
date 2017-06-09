@@ -1,9 +1,18 @@
-project(wayland-protocols-1.7)
-
+project(wayland-protocols)
 
 set(WAYLAND_SCANNER_VERSION 1.13.0)
-set(WAYLAND_SCANNER_REQUIRED_VERSION ${WAYLAND_PROTOCOLS_VERSION})
+set(WAYLAND_SCANNER_REQUIRED_VERSION ${WAYLAND_SCANNER_VERSION})
+set(WAYLAND_VERSION 1.13.0)
+set(WAYLAND_REQUIRED_VERSION ${WAYLAND_VERSION})
+
+set(WAYLAND_PROTOCOLS_VERSION 1.7)
+set(WAYLAND_PROTOCOLS_REQUIRED_VERSION ${WAYLAND_PROTOCOLS_VERSION})
+set(WAYLAND_PROTOCOLS_NAME ${PROJECT_NAME})
+set(WAYLAND_PROTOCOLS_BASE ${WAYLAND_PROTOCOLS_NAME}-${WAYLAND_PROTOCOLS_VERSION})
+
+find_package(Wayland REQUIRED)
 find_package(WaylandScanner REQUIRED)
+find_package(WaylandProtocols QUIET)
 
 set (unstable_protocols
     unstable/pointer-gestures/pointer-gestures-unstable-v1.xml
@@ -20,7 +29,7 @@ set (unstable_protocols
     unstable/xdg-foreign/xdg-foreign-unstable-v1.xml
     unstable/idle-inhibit/idle-inhibit-unstable-v1.xml)
 
-SET(stable_protocols
+set(stable_protocols
     stable/presentation-time/presentation-time.xml
     stable/viewporter/viewporter.xml)
 
@@ -31,17 +40,35 @@ function(wayland_scanner in)
     endforeach()
 endfunction()
 
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/uninstall.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake
+    IMMEDIATE @ONLY)
+
+add_custom_target(uninstall_${PROJECT_NAME}
+    COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${PROJECT_NAME} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake
+    COMMENT "Uninstalling ${PROJECT_NAME}")
+
+add_custom_target(install_${PROJECT_NAME}
+    COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${PROJECT_NAME} -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+    COMMENT "Installing ${PROJECT_NAME}")
+
+add_dependencies(install-components install_${PROJECT_NAME})
+
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(datarootdir "\${prefix}/share")
+set(datadir "\${datarootdir}")
+set(PACKAGE "${PROJECT_NAME}")
+
+configure_file(wayland-protocols.pc.in ${CMAKE_CURRENT_SOURCE_DIR}/wayland-protocols.pc)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/wayland-protocols.pc
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/pkgconfig
+    COMPONENT ${PROJECT_NAME})
+
 wayland_scanner(unstable_protocols)
 wayland_scanner(stable_protocols)
 
-#set(SOURCE_FILES main.cpp)
-#add_executable(${PROJECT_NAME} ${SOURCE_FILES})
-#target_include_directories(${PROJECT_NAME} PRIVATE ${EGL_INCLUDE_DIRS} ${WAYLAND_CLIENT_INCLUDE_DIR} ${WAYLAND_EGL_INCLUDE_DIR})
-#target_link_libraries(${PROJECT_NAME} ${GLEW_LIBRARY} ${OPENGL_LIBRARY} ${EGL_LIBRARIES} ${WAYLAND_CLIENT_LIBRARIES} ${WAYLAND_EGL_LIBRARIES})
-#
-#message(STATUS "Installing targets ${PROJECT_NAME}")
-#install(TARGETS ${PROJECT_NAME}
-#    RUNTIME DESTINATION bin
-#    LIBRARY DESTINATION lib
-#    ARCHIVE DESTINATION lib)
+add_custom_target(${WAYLAND_PROTOCOLS_BASE})
 
+add_dependencies(install_${PROJECT_NAME}
+    ${WAYLAND_PROTOCOLS_BASE})
