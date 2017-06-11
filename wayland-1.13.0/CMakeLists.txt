@@ -14,8 +14,8 @@ find_package(LibXml2 REQUIRED)
 find_package(Wayland QUIET)
 
 set(WAYLAND_COMPILE_DEFINITIONS HAVE_CONFIG_H)
-set(WAYLAND_COMPILER_OPTIONS -O2 -Wall -Wextra -Wno-unused-parameter -g -Wstrict-prototypes -Wmissing-prototypes -fvisibility=hidden)
-set(WAYLAND_INCLUDE_DIRS . ./src ./protocol)
+set(WAYLAND_COMPILER_OPTIONS -Wall -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -fvisibility=hidden)
+set(WAYLAND_INCLUDE_DIRS . src protocol ${SYSTEM_INCLUDES})
 
 # wayland-util
 set(WAYLAND_UTIL_COMPILE_DEFINITIONS ${WAYLAND_COMPILE_DEFINITIONS})

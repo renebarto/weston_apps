@@ -7,7 +7,7 @@
 #
 # Will be defined:
 #  LIBFFI_FOUND - System has LibFFI
-#  LIBFFI_INCLUDE_DIR - The LibFFI include directories
+#  LIBFFI_INCLUDE_DIRS - The LibFFI include directories
 #  LIBFFI_LIBRARIES - The libraries needed to use LibFFI
 #  LIBFFI_DEFINITIONS - Compiler switches required for using LibFFI
 
@@ -56,11 +56,11 @@ set(LIBFFI_INCLUDE_DIR ${LIBFFI_INCLUDE_DIRS} )
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LibFFI
-    REQUIRED_VARS LIBFFI_LIBRARIES LIBFFI_INCLUDE_DIR)
+    REQUIRED_VARS LIBFFI_LIBRARIES LIBFFI_INCLUDE_DIRS)
 
 if (LIBFFI_FOUND)
 else()
     message(WARNING "Could not find libffi, please install: sudo apt-get install libffi-dev")
 endif()
 
-mark_as_advanced(LIBFFI_INCLUDE_DIR LIBFFI_LIBRARIES)
+mark_as_advanced(LIBFFI_INCLUDE_DIRS LIBFFI_LIBRARIES)

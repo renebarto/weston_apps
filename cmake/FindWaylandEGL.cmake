@@ -15,7 +15,29 @@ find_package(PkgConfig)
 pkg_check_modules(PC_WAYLAND_EGL QUIET wayland-egl)
 
 if(PC_WAYLAND_EGL_FOUND)
-    set(WAYLAND_EGL_FOUND_TEXT "Found")
+    if(WAYLAND_EGL_REQUIRED_VERSION)
+        if (NOT "${WAYLAND_EGL_REQUIRED_VERSION}" STREQUAL "${PC_WAYLAND_EGL_VERSION}")
+            message(WARNING "Incorrect version, please install wayland-egl-${WAYLAND_EGL_REQUIRED_VERSION}")
+            set(WAYLAND_EGL_FOUND_TEXT "Found incorrect version")
+            unset(PC_WAYLAND_EGL_FOUND)
+        endif()
+    endif()
+else()
+    set(WAYLAND_EGL_FOUND_TEXT "Not found")
+endif()
+
+if(PC_WAYLAND_EGL_FOUND)
+    find_path(WAYLAND_EGL_INCLUDE_DIRS NAMES wayland-egl.h
+        HINTS ${PC_WAYLAND_EGL_INCLUDE_DIRS})
+
+    find_library(WAYLAND_EGL_LIBRARY NAMES wayland-egl
+        HINTS ${PC_WAYLAND_EGL_LIBRARY} ${PC_WAYLAND_EGL_LIBRARY_DIRS})
+
+    if("${WAYLAND_EGL_INCLUDE_DIRS}" STREQUAL "" OR "${WAYLAND_EGL_LIBRARY}" STREQUAL "")
+        set(WAYLAND_EGL_FOUND_TEXT "Not found")
+    else()
+        set(WAYLAND_EGL_FOUND_TEXT "Found")
+    endif()
 else()
     set(WAYLAND_EGL_FOUND_TEXT "Not found")
 endif()
@@ -28,33 +50,18 @@ message(STATUS "  include dirs : ${PC_WAYLAND_EGL_INCLUDE_DIRS}")
 message(STATUS "  lib dirs     : ${PC_WAYLAND_EGL_LIBRARY_DIRS}")
 message(STATUS "  libs         : ${PC_WAYLAND_EGL_LIBRARIES}")
 
-# find include paths
-find_path(WAYLAND_EGL_INCLUDE_DIR wayland-egl.h ${PC_WAYLAND_SERVER_INCLUDE_DIRS})
-
-# find libs
-find_library(WAYLAND_EGL_LIBRARIES NAMES wayland-egl PATHS ${PC_WAYLAND_EGL_LIBRARY_DIRS})
-
-# set _FOUND vars
-if (NOT ${WAYLAND_EGL_INCLUDE_DIR} STREQUAL "" AND NOT ${WAYLAND_EGL_LIBRARIES} STREQUAL "")
-set(WAYLAND_EGL_FOUND TRUE)
-endif()
+set(WAYLAND_EGL_DEFINITIONS ${PC_WAYLAND_EGL_CFLAGS_OTHER})
+set(WAYLAND_EGL_INCLUDE_DIR ${WAYLAND_EGL_INCLUDE_DIRS})
+set(WAYLAND_EGL_LIBRARIES ${WAYLAND_EGL_LIBRARY})
+set(WAYLAND_EGL_LIBRARY_DIRS ${PC_WAYLAND_EGL_LIBRARY_DIRS})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(WAYLAND_EGL DEFAULT_MSG
-        WAYLAND_EGL_INCLUDE_DIR WAYLAND_EGL_LIBRARIES)
+    WAYLAND_EGL_LIBRARIES WAYLAND_EGL_INCLUDE_DIRS)
 
-if (WAYLAND_EGL_FOUND)
-    if (WAYLAND_EGL_REQUIRED_VERSION)
-        if (NOT "${WAYLAND_EGL_REQUIRED_VERSION}" STREQUAL "${PC_WAYLAND_EGL_VERSION}")
-            message(WARNING "Incorrect version, please install wayland-egl-${WAYLAND_EGL_REQUIRED_VERSION}")
-            unset(WAYLAND_EGL_FOUND)
-        endif()
-    else()
-        message(STATUS "Found wayland-egl")
-    endif()
+if(WAYLAND_EGL_FOUND)
 else()
     message(WARNING "Could not find wayland-egl, please install: sudo apt-get install libwayland-egl1-mesa")
 endif()
 
-mark_as_advanced(
-        WAYLAND_EGL_INCLUDE_DIR WAYLAND_EGL_LIBRARIES)
+mark_as_advanced(WAYLAND_EGL_DEFINITIONS WAYLAND_EGL_INCLUDE_DIRS WAYLAND_EGL_LIBRARIES)

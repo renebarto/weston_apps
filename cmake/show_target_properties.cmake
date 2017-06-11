@@ -1,7 +1,7 @@
 include (${CMAKE_SOURCE_DIR}/cmake/list_to_string.cmake)
 
 function(show_target_properties target)
-    message(STATUS "Properties for ${target}")
+    message(STATUS "\nProperties for ${target}")
 
     MESSAGE(STATUS "CMAKE_CXX_FLAGS:                    " ${CMAKE_CXX_FLAGS})
     MESSAGE(STATUS "CMAKE_CXX_FLAGS_DEBUG:              " ${CMAKE_CXX_FLAGS_DEBUG} )
@@ -9,8 +9,9 @@ function(show_target_properties target)
     MESSAGE(STATUS "CMAKE_CXX_FLAGS_MINSIZEREL:         " ${CMAKE_CXX_FLAGS_MINSIZEREL} )
     MESSAGE(STATUS "CMAKE_CXX_FLAGS_RELWITHDEBINFO:     " ${CMAKE_CXX_FLAGS_RELWITHDEBINFO} )
 
-    get_target_property(INCLUDES ${PROJECT_NAME} INCLUDE_DIRECTORIES)
-    message(STATUS "Includes:                           " ${INCLUDES})
+    get_target_property(INCLUDES ${target} INCLUDE_DIRECTORIES)
+    list_to_string(INCLUDES STR)
+    message(STATUS "Includes:                           " ${STR})
 
     get_target_property(DEFINES ${target} COMPILE_DEFINITIONS)
     list_to_string(DEFINES STR)
@@ -22,15 +23,19 @@ function(show_target_properties target)
 
     get_target_property(INCLUDES ${target} INCLUDE_DIRECTORIES)
     list_to_string(INCLUDES STR)
-    message(STATUS "Target includes:                    " ${STR})
+    message(STATUS "Target include directories:         " ${STR})
 
     get_target_property(LIBRARIES ${target} LINK_LIBRARIES)
     list_to_string(LIBRARIES STR)
     message(STATUS "Target link libraries:              " ${STR})
 
-    get_target_property(LIBRARIES ${target} LINK_FLAGS)
-    list_to_string(LIBRARIES STR)
+    get_target_property(FLAGS ${target} LINK_FLAGS)
+    list_to_string(FLAGS STR)
     message(STATUS "Target link options:                " ${STR})
+
+    get_target_property(LINK_DEPENDS ${target} LINK_DEPENDS)
+    list_to_string(LINK_DEPENDS STR)
+    message(STATUS "Target link dependencies:           " ${STR})
 
     get_target_property(DEFINES_EXPORTS ${target} INTERFACE_COMPILE_DEFINITIONS)
     list_to_string(DEFINES_EXPORTS STR)

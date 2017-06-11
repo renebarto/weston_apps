@@ -11,6 +11,7 @@
 #
 
 find_package(PkgConfig)
+
 pkg_check_modules(PC_WAYLAND_SCANNER QUIET wayland-scanner)
 
 if(PC_WAYLAND_SCANNER_FOUND)
@@ -26,7 +27,7 @@ else()
 endif()
 
 if(PC_WAYLAND_SCANNER_FOUND)
-    find_program(WAYLAND_SCANNER_PATH wayland-scanner ${PC_WAYLAND_SCANNER_PREFIX})
+    find_program(WAYLAND_SCANNER_PATH wayland-scanner ${CMAKE_INSTALL_PREFIX}/bin)
     if (NOT "${WAYLAND_SCANNER_PATH}" STREQUAL "")
         set(WAYLAND_SCANNER_FOUND_TEXT "Found")
     else()

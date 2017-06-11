@@ -14,32 +14,6 @@ find_package(Wayland REQUIRED)
 find_package(WaylandScanner REQUIRED)
 find_package(WaylandProtocols QUIET)
 
-set (unstable_protocols
-    unstable/pointer-gestures/pointer-gestures-unstable-v1.xml
-    unstable/fullscreen-shell/fullscreen-shell-unstable-v1.xml
-    unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml
-    unstable/text-input/text-input-unstable-v1.xml
-    unstable/input-method/input-method-unstable-v1.xml
-    unstable/xdg-shell/xdg-shell-unstable-v5.xml
-    unstable/xdg-shell/xdg-shell-unstable-v6.xml
-    unstable/relative-pointer/relative-pointer-unstable-v1.xml
-    unstable/pointer-constraints/pointer-constraints-unstable-v1.xml
-    unstable/tablet/tablet-unstable-v1.xml
-    unstable/tablet/tablet-unstable-v2.xml
-    unstable/xdg-foreign/xdg-foreign-unstable-v1.xml
-    unstable/idle-inhibit/idle-inhibit-unstable-v1.xml)
-
-set(stable_protocols
-    stable/presentation-time/presentation-time.xml
-    stable/viewporter/viewporter.xml)
-
-function(wayland_scanner in)
-    foreach(VAL ${${in}})
-        message(STATUS "${VAL}")
-        install(FILES ${VAL} DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols)
-    endforeach()
-endfunction()
-
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/uninstall.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake
@@ -65,10 +39,54 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/wayland-protocols.pc
     DESTINATION ${CMAKE_INSTALL_PREFIX}/share/pkgconfig
     COMPONENT ${PROJECT_NAME})
 
-wayland_scanner(unstable_protocols)
-wayland_scanner(stable_protocols)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/pointer-gestures/pointer-gestures-unstable-v1.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/pointer-gestures/pointer-gestures-unstable-v1.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/fullscreen-shell/fullscreen-shell-unstable-v1.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/fullscreen-shell/fullscreen-shell-unstable-v1.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/text-input/text-input-unstable-v1.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/text-input/text-input-unstable-v1.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/input-method/input-method-unstable-v1.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/input-method/input-method-unstable-v1.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/xdg-shell/xdg-shell-unstable-v5.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/xdg-shell/xdg-shell-unstable-v5.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/xdg-shell/xdg-shell-unstable-v6.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/xdg-shell/xdg-shell-unstable-v6.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/relative-pointer/relative-pointer-unstable-v1.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/relative-pointer/relative-pointer-unstable-v1.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/tablet/tablet-unstable-v1.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/tablet/tablet-unstable-v1.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/tablet/tablet-unstable-v2.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/tablet/tablet-unstable-v2.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/xdg-foreign/xdg-foreign-unstable-v1.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/xdg-foreign/xdg-foreign-unstable-v1.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/unstable/idle-inhibit/idle-inhibit-unstable-v1.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/unstable/idle-inhibit/idle-inhibit-unstable-v1.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/stable/presentation-time/presentation-time.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/stable/presentation-time/presentation-time.xml
+    COMPONENT ${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/stable/viewporter/viewporter.xml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-protocols/stable/viewporter/viewporter.xml
+    COMPONENT ${PROJECT_NAME})
 
-add_custom_target(${WAYLAND_PROTOCOLS_BASE})
+add_custom_target(${WAYLAND_PROTOCOLS_BASE}
+    )
 
 add_dependencies(install_${PROJECT_NAME}
     ${WAYLAND_PROTOCOLS_BASE})

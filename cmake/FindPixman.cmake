@@ -7,7 +7,7 @@
 #
 # Will be defined:
 #   PIXMAN_FOUND         - True if Pixman is available
-#   PIXMAN_INCLUDE_DIR   - Include directories for Pixman
+#   PIXMAN_INCLUDE_DIRS   - Include directories for Pixman
 #   PIXMAN_LIBRARY       - List of libraries for Pixman
 #   PIXMAN_DEFINITIONS   - List of definitions for Pixman
 #
@@ -71,11 +71,11 @@ set(PIXMAN_LIBRARIES ${PIXMAN_LIBRARY})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PIXMAN DEFAULT_MSG
-    PIXMAN_LIBRARY PIXMAN_INCLUDE_DIR)
+    PIXMAN_LIBRARIES PIXMAN_INCLUDE_DIRS)
 
 if (PIXMAN_FOUND)
 else()
     message(WARNING "Could not find pixman-1, please install: sudo apt-get install libpixman-1-dev")
 endif()
 
-mark_as_advanced(PIXMAN_INCLUDE_DIR PIXMAN_LIBRARY PIXMAN_DEFINITIONS)
+mark_as_advanced(PIXMAN_INCLUDE_DIRS PIXMAN_LIBRARIES PIXMAN_DEFINITIONS)

@@ -1,6 +1,11 @@
-# - Try to Find GLES
-# Once done, this will define
+# - Try to find EGL library
 #
+# Copyright (C) 2017 Rene Barto
+#
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+# Will be defined:
 #  GLES_FOUND - system has EGL installed.
 #  GLES_INCLUDE_DIRS - directories which contain the EGL headers.
 #  GLES_LIBRARIES - libraries required to link against EGL.
@@ -31,23 +36,107 @@
 
 
 find_package(PkgConfig)
+pkg_check_modules(PC_GLESV1 glesv1_cm)
+pkg_check_modules(PC_GLESV2 glesv2)
 
-pkg_check_modules(PC_GLES glesv2)
+if(PC_GLESV1_FOUND)
+    if(GLESV1_REQUIRED_VERSION)
+        if (NOT "${GLESV1_REQUIRED_VERSION}" STREQUAL "${PC_GLESV1_VERSION}")
+            message(WARNING "Incorrect version, please install libgles1-mesa-dev-${GLESV1_REQUIRED_VERSION}")
+            set(GLESV1_FOUND_TEXT "Found incorrect version")
+            unset(PC_GLESV1_FOUND)
+        endif()
+    endif()
+else()
+    set(GLESV1_FOUND_TEXT "Not found")
+endif()
 
-if (PC_GLES_FOUND)
-    set(GLES_DEFINITIONS ${PC_GLES_CFLAGS_OTHER})
-endif ()
+if(PC_GLESV1_FOUND)
+    find_path(GLESV1_INCLUDE_DIRS NAMES GLES/gl.h GLES/glext.h GLES/glplatform.h
+        HINTS ${PC_GLESV1_INCLUDE_DIRS})
 
-find_path(GLES_INCLUDE_DIRS NAMES GLES2/gl2.h
-        HINTS ${PC_GLES_INCLUDEDIR} ${PC_GLES_INCLUDE_DIRS}
-        )
+    find_library(GLESV1_LIBRARY NAMES GLESv1_CM
+        HINTS ${PC_GLESV1_LIBRARY} ${PC_GLESV1_LIBRARY_DIRS})
 
-set(GLES_NAMES ${GLES_NAMES} gles GLESv2 GLESv1_CM)
-find_library(GLES_LIBRARIES NAMES ${GLES_NAMES}
-        HINTS ${PC_GLES_LIBDIR} ${PC_GLES_LIBRARY_DIRS}
-        )
+    if("${GLESV1_INCLUDE_DIRS}" STREQUAL "" OR "${GLESV1_LIBRARY}" STREQUAL "")
+        set(GLESV1_FOUND_TEXT "Not found")
+    else()
+        set(GLESV1_FOUND_TEXT "Found")
+    endif()
+else()
+    set(GLESV1_FOUND_TEXT "Not found")
+endif()
+
+if(PC_GLESV2_FOUND)
+    if(GLESV2_REQUIRED_VERSION)
+        if (NOT "${GLESV2_REQUIRED_VERSION}" STREQUAL "${PC_GLESV2_VERSION}")
+            message(WARNING "Incorrect version, please install libgles2-mesa-dev-${GLESV2_REQUIRED_VERSION}")
+            set(GLESV2_FOUND_TEXT "Found incorrect version")
+            unset(PC_GLESV2_FOUND)
+        endif()
+    endif()
+else()
+    set(GLESV2_FOUND_TEXT "Not found")
+endif()
+
+if(PC_GLESV2_FOUND)
+    find_path(GLESV2_INCLUDE_DIRS NAMES GLES2/gl2.h GLES2/gl2ext.h GLES2/gl2platform.h
+        HINTS ${PC_GLESV2_INCLUDE_DIRS})
+
+    find_library(GLESV2_LIBRARY NAMES GLESv2
+        HINTS ${PC_GLESV2_LIBRARY} ${PC_GLESV2_LIBRARY_DIRS})
+
+    if("${GLESV2_INCLUDE_DIRS}" STREQUAL "" OR "${GLESV2_LIBRARY}" STREQUAL "")
+        set(GLESV2_FOUND_TEXT "Not found")
+    else()
+        set(GLESV2_FOUND_TEXT "Found")
+    endif()
+else()
+    set(GLESV2_FOUND_TEXT "Not found")
+endif()
+
+message(STATUS "glesv1         : ${GLESV1_FOUND_TEXT}")
+message(STATUS "  version      : ${PC_GLESV1_VERSION}")
+message(STATUS "  cflags       : ${PC_GLESV1_CFLAGS}")
+message(STATUS "  cflags other : ${PC_GLESV1_CFLAGS_OTHER}")
+message(STATUS "  include dirs : ${PC_GLESV1_INCLUDE_DIRS}")
+message(STATUS "  lib dirs     : ${PC_GLESV1_LIBRARY_DIRS}")
+message(STATUS "  libs         : ${PC_GLESV1_LIBRARIES}")
+
+message(STATUS "glesv2         : ${GLESV2_FOUND_TEXT}")
+message(STATUS "  version      : ${PC_GLESV2_VERSION}")
+message(STATUS "  cflags       : ${PC_GLESV2_CFLAGS}")
+message(STATUS "  cflags other : ${PC_GLESV2_CFLAGS_OTHER}")
+message(STATUS "  include dirs : ${PC_GLESV2_INCLUDE_DIRS}")
+message(STATUS "  lib dirs     : ${PC_GLESV2_LIBRARY_DIRS}")
+message(STATUS "  libs         : ${PC_GLESV2_LIBRARIES}")
+
+set(GLESV1_DEFINITIONS ${PC_GLESV1_CFLAGS_OTHER})
+set(GLESV1_INCLUDE_DIR ${GLESV1_INCLUDE_DIRS})
+set(GLESV1_LIBRARIES ${GLESV1_LIBRARY})
+set(GLESV1_LIBRARY_DIRS ${PC_GLESV1_LIBRARY_DIRS})
+
+set(GLESV2_DEFINITIONS ${PC_GLESV2_CFLAGS_OTHER})
+set(GLESV2_INCLUDE_DIR ${GLESV2_INCLUDE_DIRS})
+set(GLESV2_LIBRARIES ${GLESV2_LIBRARY})
+set(GLESV2_LIBRARY_DIRS ${PC_GLESV2_LIBRARY_DIRS})
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(GLES DEFAULT_MSG GLES_INCLUDE_DIRS GLES_LIBRARIES)
+find_package_handle_standard_args(GLESV1 DEFAULT_MSG
+    GLESV1_LIBRARIES GLESV1_INCLUDE_DIRS)
+find_package_handle_standard_args(GLESV2 DEFAULT_MSG
+    GLESV2_LIBRARIES GLESV2_INCLUDE_DIRS)
 
-mark_as_advanced(GLES_INCLUDE_DIRS GLES_LIBRARIES)
+if(GLESV1_FOUND)
+else()
+    message(WARNING "Could not find glesv1, please install: sudo apt-get install libgles1-mesa-dev")
+endif()
+if(GLESV2_FOUND)
+else()
+    message(WARNING "Could not find glesv2, please install: sudo apt-get install libgles2-mesa-dev")
+endif()
+
+mark_as_advanced(
+    GLESV1_DEFINITIONS GLESV1_LIBRARIES GLESV1_INCLUDE_DIRS
+    GLESV2_DEFINITIONS GLESV2_LIBRARIES GLESV2_INCLUDE_DIRS)
+

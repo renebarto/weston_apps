@@ -7,7 +7,7 @@
 #
 # Will be defined:
 #   LIBXML2_FOUND - System has LibXml2
-#   LIBXML2_INCLUDE_DIR - The LibXml2 include directory
+#   LIBXML2_INCLUDE_DIRS - The LibXml2 include directory
 #   LIBXML2_LIBRARIES - The libraries needed to use LibXml2
 #   LIBXML2_DEFINITIONS - Compiler switches required for using LibXml2
 #   LIBXML2_XMLLINT_EXECUTABLE - The XML checking tool xmllint coming with LibXml2
@@ -96,7 +96,7 @@ set(LIBXML2_INCLUDE_DIR ${LIBXML2_INCLUDE_DIRS} )
 # all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibXml2
-    REQUIRED_VARS LIBXML2_LIBRARIES LIBXML2_INCLUDE_DIR
+    REQUIRED_VARS LIBXML2_LIBRARIES LIBXML2_INCLUDE_DIRS
     VERSION_VAR LIBXML2_VERSION_STRING)
 
 if (LIBXML2_FOUND)
@@ -104,4 +104,4 @@ else()
     message(WARNING "Could not find libxml2, please install: sudo apt-get install libxml2-dev")
 endif()
 
-mark_as_advanced(LIBXML2_DEFINITIONS LIBXML2_INCLUDE_DIR LIBXML2_LIBRARIES LIBXML2_XMLLINT_EXECUTABLE LIBXML2_VERSION_STRING)
+mark_as_advanced(LIBXML2_DEFINITIONS LIBXML2_INCLUDE_DIRS LIBXML2_LIBRARIES LIBXML2_XMLLINT_EXECUTABLE LIBXML2_VERSION_STRING)

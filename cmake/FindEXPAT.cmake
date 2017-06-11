@@ -81,4 +81,4 @@ else()
     message(WARNING "Could not find expat, please install: sudo apt install libexpat1-dev")
 endif()
 
-mark_as_advanced(EXPAT_INCLUDE_DIR EXPAT_LIBRARIES)
+mark_as_advanced(EXPAT_INCLUDE_DIRS EXPAT_LIBRARIES)
