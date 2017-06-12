@@ -97,7 +97,7 @@
 											"height": 13,
 											"autoResize": false,
 											"underline": false,
-											"text": "client-wl_display",
+											"text": "wl_display",
 											"horizontalAlignment": 2,
 											"verticalAlignment": 5,
 											"wordWrap": false
@@ -239,7 +239,7 @@
 											"height": 13,
 											"autoResize": false,
 											"underline": false,
-											"text": "+wl_display_connect()",
+											"text": "+wl_display_connect()()",
 											"horizontalAlignment": 0,
 											"verticalAlignment": 5,
 											"wordWrap": false
@@ -6303,7 +6303,6 @@
 							"visibility": "public",
 							"isStatic": false,
 							"isLeaf": false,
-							"type": "",
 							"isReadOnly": false,
 							"isOrdered": false,
 							"isUnique": false,
