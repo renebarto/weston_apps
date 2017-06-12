@@ -1,4 +1,4 @@
-#include "GenCMakeLists.h"
+#include "Generator.h"
 
 int main(int argc, char * argv[])
 {

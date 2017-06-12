@@ -1,0 +1,11 @@
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
+set(CMAKE_CXX_STANDARD 11)
+
+if(CMAKE_BUILD_TYPE)
+    message(STATUS "Current build type: ${CMAKE_BUILD_TYPE}")
+else()
+    message(STATUS "Setting build to Debug")
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING
+        "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif()
