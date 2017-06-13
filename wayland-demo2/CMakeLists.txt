@@ -1,4 +1,4 @@
-project(hello-wayland)
+project(wayland-demo2)
 
 #find_package(Wayland REQUIRED)
 #
@@ -9,24 +9,17 @@ project(hello-wayland)
 #message(STATUS ${WAYLAND_CLIENT_INCLUDE_DIR})
 #message(STATUS ${WAYLAND_CLIENT_LIBRARIES})
 
-set(HELLO_WAYLAND_SOURCE_FILES
-    main.cpp
-    helpers.c)
-set(HELLO_WAYLAND_HEADER_FILES
-    helpers.h)
-set(HELLO_WAYLAND_DATA_FILES
-    images.bin)
-set(HELLO_WAYLAND_LIBS
+set(WAYLAND_DEMO2_SOURCE_FILES
+    main.cpp)
+set(WAYLAND_DEMO2_HEADER_FILES
+    )
+set(WAYLAND_DEMO2_LIBS
     wayland-classes
     wayland-client-shared)
 
-add_executable(${PROJECT_NAME} ${HELLO_WAYLAND_SOURCE_FILES} ${HELLO_WAYLAND_HEADER_FILES})
-#target_include_directories(${PROJECT_NAME} PRIVATE ${WAYLAND_CLIENT_INCLUDE_DIR})
-#target_link_libraries(${PROJECT_NAME} ${WAYLAND_CLIENT_LIBRARIES})
-target_link_libraries(${PROJECT_NAME} ${HELLO_WAYLAND_LIBS})
-add_dependencies(${PROJECT_NAME} wayland-classes)
-add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${DATA_FILES} $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+add_executable(${PROJECT_NAME} ${WAYLAND_DEMO2_SOURCE_FILES} ${WAYLAND_DEMO2_HEADER_FILES})
+target_link_libraries(${PROJECT_NAME} ${WAYLAND_DEMO2_LIBS})
+add_dependencies(${PROJECT_NAME} ${WAYLAND_DEMO2_LIBS})
 
 include(show_target_properties)
 show_target_properties(${PROJECT_NAME})

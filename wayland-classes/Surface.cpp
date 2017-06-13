@@ -61,12 +61,10 @@ void Surface::Commit()
 
 ShellSurface::ShellSurface()
 {
-
 }
 
 ShellSurface::~ShellSurface()
 {
-
 }
 
 bool ShellSurface::Create(wl_compositor * compositor, wl_shell * shell)

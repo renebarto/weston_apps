@@ -1,5 +1,7 @@
 project(wayland)
 
+include(show_target_properties)
+
 set(WAYLAND_VERSION_MAJOR 1)
 set(WAYLAND_VERSION_MINOR 13)
 set(WAYLAND_VERSION_MICRO 0)
@@ -13,7 +15,7 @@ find_package(EXPAT REQUIRED)
 find_package(LibXml2 REQUIRED)
 find_package(Wayland QUIET)
 
-set(WAYLAND_COMPILE_DEFINITIONS HAVE_CONFIG_H)
+set(WAYLAND_COMPILE_DEFINITIONS HAVE_CONFIG_H WAYLAND_DEBUG)
 set(WAYLAND_COMPILER_OPTIONS -Wall -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -fvisibility=hidden)
 set(WAYLAND_INCLUDE_DIRS . src protocol ${SYSTEM_INCLUDES})
 

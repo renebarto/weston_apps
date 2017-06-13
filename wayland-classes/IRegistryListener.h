@@ -14,6 +14,7 @@ public:
                                            uint32_t name,
                                            const char * interface,
                                            uint32_t version) = 0;
+
     virtual void RegistryCallbackGlobalRemove(wl_registry * wl_registry,
                                               uint32_t name) = 0;
 };

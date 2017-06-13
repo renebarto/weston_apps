@@ -4,27 +4,24 @@
 #include <iostream>
 #include <wayland-client.h>
 #include "IRegistryListener.h"
+#include "IPointerListener.h"
 
 namespace Wayland
 {
 
+class Pointer;
+
 class Display :
-    public IRegistryListener
+    public IRegistryListener,
+    public IPointerListener
 {
 public:
     Display() {}
     ~Display() {}
 
     bool Setup();
-    void Cleanup()
-    {
-        wl_pointer_destroy(_pointer);
-        wl_seat_destroy(_seat);
-        wl_shell_destroy(_shell);
-        wl_shm_destroy(_shm);
-        wl_compositor_destroy(_compositor);
-        wl_display_disconnect(_display);
-    }
+    void Roundtrip();
+    void Cleanup();
     bool Dispatch()
     {
         return (wl_display_dispatch(_display) >= 0);
@@ -36,7 +33,7 @@ public:
     static wl_shm * Shm() { return _shm; }
     static wl_shell * Shell() { return _shell; }
     static wl_seat * Seat() { return _seat; }
-    static wl_pointer * Pointer() { return _pointer; }
+    static Pointer * GetPointer() { return _pointer; }
 
 private:
     virtual void RegistryCallbackGlobalAdd(wl_registry * wl_registry,
@@ -45,6 +42,23 @@ private:
                                            uint32_t version) override final;
     virtual void RegistryCallbackGlobalRemove(wl_registry * wl_registry,
                                               uint32_t name) override final;
+
+    virtual void PointerEnter(wl_pointer * pointer,
+                              uint32_t serial, wl_surface * surface,
+                              wl_fixed_t surfaceX, wl_fixed_t surfaceY) override final;
+
+    virtual void PointerLeave(wl_pointer * pointer, uint32_t serial,
+                              wl_surface * wl_surface) override final;
+
+    virtual void PointerMotion(wl_pointer * pointer, uint32_t time,
+                               wl_fixed_t surfaceX, wl_fixed_t surfaceY) override final;
+
+    virtual void PointerButton(wl_pointer * pointer, uint32_t serial,
+                               uint32_t time, uint32_t button, uint32_t state) override final;
+
+    virtual void PointerAxis(wl_pointer * pointer, uint32_t time,
+                             uint32_t axis, wl_fixed_t value) override final;
+
 
 //    static constexpr wl_pointer_listener _pointerListener = {
 //        .enter = pointer_enter,
@@ -59,7 +73,7 @@ private:
     static wl_shm * _shm;
     static wl_shell * _shell;
     static wl_seat * _seat;
-    static wl_pointer * _pointer;
+    static Pointer * _pointer;
 };
 
 } // namespace Wayland

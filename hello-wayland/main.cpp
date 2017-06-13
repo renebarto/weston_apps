@@ -33,6 +33,9 @@ int main(int argc, char * argv[])
 
     if (!display.Setup())
         return EXIT_FAILURE;
+    Wayland::Registry registry(display);
+    registry.AddListener(&display);
+    display.Roundtrip();
 
     int image = open("images.bin", O_RDWR);
 
@@ -49,8 +52,8 @@ int main(int argc, char * argv[])
     Wayland::Buffer buffer;
     buffer.Create(pool, WIDTH, HEIGHT);
     buffer.Bind(surface);
-    Wayland::Pointer pointer(display.Pointer());
-    if (!pointer.SetFromPool(display.Compositor(), pool, CURSOR_WIDTH, CURSOR_HEIGHT, CURSOR_HOT_SPOT_X, CURSOR_HOT_SPOT_Y))
+    Wayland::Pointer * pointer = display.GetPointer();
+    if (!pointer->SetFromPool(display.Compositor(), pool, CURSOR_WIDTH, CURSOR_HEIGHT, CURSOR_HOT_SPOT_X, CURSOR_HOT_SPOT_Y))
     {
         cerr << "Error setting pointer" << endl;
         return EXIT_FAILURE;
@@ -69,12 +72,13 @@ int main(int argc, char * argv[])
 
     cerr << "Exiting sample wayland client..." << endl;
 
-    pointer.Release();
+    pointer->Release();
     buffer.Free();
     surface.Destroy();
     pool.Free();
     close(image);
 
+    registry.Cleanup();
     display.Cleanup();
 
     return EXIT_SUCCESS;

@@ -466,6 +466,9 @@ WL_EXPORT int
 wl_proxy_add_listener(struct wl_proxy *proxy,
 		      void (**implementation)(void), void *data)
 {
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_proxy_add_listener(proxy %p, impl %p, data %p)\n", proxy, implementation, data);
+#endif
 	if (proxy->flags & WL_PROXY_FLAG_WRAPPER)
 		wl_abort("Proxy %p is a wrapper\n", proxy);
 
@@ -596,6 +599,10 @@ wl_proxy_marshal_array_constructor(struct wl_proxy *proxy,
 				   uint32_t opcode, union wl_argument *args,
 				   const struct wl_interface *interface)
 {
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_proxy_marshal_array_constructor(proxy %p, opcode %u, args %p, intf %p)\n",
+            proxy, opcode, args, interface);
+#endif
 	return wl_proxy_marshal_array_constructor_versioned(proxy, opcode,
 							    args, interface,
 							    proxy->version);
@@ -633,6 +640,10 @@ wl_proxy_marshal_array_constructor_versioned(struct wl_proxy *proxy,
 					     const struct wl_interface *interface,
 					     uint32_t version)
 {
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_proxy_marshal_array_constructor_versioned(proxy %p, opcode %u, args %p, intf %p, version %u)\n",
+            proxy, opcode, args, interface, version);
+#endif
 	struct wl_closure *closure;
 	struct wl_proxy *new_proxy = NULL;
 	const struct wl_message *message;
@@ -663,6 +674,10 @@ wl_proxy_marshal_array_constructor_versioned(struct wl_proxy *proxy,
  err_unlock:
 	pthread_mutex_unlock(&proxy->display->mutex);
 
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_proxy_marshal_array_constructor_versioned -> proxy %p\n",
+            new_proxy);
+#endif
 	return new_proxy;
 }
 
@@ -685,6 +700,9 @@ wl_proxy_marshal_array_constructor_versioned(struct wl_proxy *proxy,
 WL_EXPORT void
 wl_proxy_marshal(struct wl_proxy *proxy, uint32_t opcode, ...)
 {
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_proxy_marshal(proxy %p, opcode %u)\n", proxy, opcode);
+#endif
 	union wl_argument args[WL_CLOSURE_MAX_ARGS];
 	va_list ap;
 
@@ -722,6 +740,9 @@ WL_EXPORT struct wl_proxy *
 wl_proxy_marshal_constructor(struct wl_proxy *proxy, uint32_t opcode,
 			     const struct wl_interface *interface, ...)
 {
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_proxy_marshal_constructor(proxy %p, opcode %u, intf %p)\n", proxy, opcode, interface);
+#endif
 	union wl_argument args[WL_CLOSURE_MAX_ARGS];
 	va_list ap;
 
@@ -920,6 +941,9 @@ wl_display_connect_to_fd(int fd)
 	struct wl_display *display;
 	const char *debug;
 
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_display_connect_to_fd(%d)\n", fd);
+#endif
 	debug = getenv("WAYLAND_DEBUG");
 	if (debug && (strstr(debug, "client") || strstr(debug, "1")))
 		debug_client = 1;
@@ -973,6 +997,18 @@ wl_display_connect_to_fd(int fd)
 	if (display->connection == NULL)
 		goto err_connection;
 
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_display_connect_to_fd -> display %p\n"
+                    "   fd              %d\n"
+                    "   reader_count    %d\n"
+                    "   proxy.object.id %d\n"
+                    "   proxy.flags     %d\n"
+                    "   proxy.refcount  %d\n"
+                    "   proxy.version   %d\n",
+            display,
+            display->fd, display->reader_count, display->proxy.object.id,
+            display->proxy.flags, display->proxy.refcount, display->proxy.version);
+#endif
 	return display;
 
  err_connection:
@@ -999,10 +1035,16 @@ wl_display_connect_to_fd(int fd)
 WL_EXPORT struct wl_display *
 wl_display_connect(const char *name)
 {
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_display_connect(%s)\n", name);
+#endif
 	char *connection, *end;
 	int flags, fd;
 
 	connection = getenv("WAYLAND_SOCKET");
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## ENV WAYLAND_SOCKET = %s\n", connection);
+#endif
 	if (connection) {
 		int prev_errno = errno;
 		errno = 0;
@@ -1020,6 +1062,9 @@ wl_display_connect(const char *name)
 		if (fd < 0)
 			return NULL;
 	}
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_display_connect fd = %d\n", fd);
+#endif
 
 	return wl_display_connect_to_fd(fd);
 }
@@ -1036,6 +1081,9 @@ wl_display_connect(const char *name)
 WL_EXPORT void
 wl_display_disconnect(struct wl_display *display)
 {
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_display_disconnect()\n");
+#endif
 	wl_connection_destroy(display->connection);
 	wl_map_release(&display->objects);
 	wl_event_queue_release(&display->default_queue);
@@ -1147,6 +1195,10 @@ wl_display_roundtrip_queue(struct wl_display *display, struct wl_event_queue *qu
 WL_EXPORT int
 wl_display_roundtrip(struct wl_display *display)
 {
+#ifdef WAYLAND_DEBUG
+    fprintf(stderr, "## wl_display_roundtrip(proxy %p = id %d)\n", display, display->proxy.object.id);
+#endif
+
 	return wl_display_roundtrip_queue(display, &display->default_queue);
 }
 

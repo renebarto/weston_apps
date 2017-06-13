@@ -12,9 +12,11 @@ class IRegistryListener;
 class Registry
 {
 public:
-    Registry(wl_display * display);
+    Registry(const Display & display);
     ~Registry();
     void AddListener(IRegistryListener const * registryListener);
+    void RemoveListener() { AddListener(nullptr); }
+    void Cleanup();
 
 private:
     wl_registry * _registry;
