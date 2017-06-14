@@ -1,7 +1,7 @@
 project(wayland-classes)
 
 set(WAYLAND_CLASSES_DEFINES
-    WAYLAND_DEBUG)
+    WAYLAND_CLASSES_DEBUG)
 set(WAYLAND_CLASSES_SOURCE_FILES
     Compositor.cpp
     Registry.cpp

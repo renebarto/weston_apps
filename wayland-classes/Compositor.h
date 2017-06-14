@@ -11,6 +11,8 @@ public:
     Compositor(wl_compositor * compositor);
     ~Compositor();
 
+    wl_compositor * Get() { return _compositor; }
+
 private:
     wl_compositor * _compositor;
 };

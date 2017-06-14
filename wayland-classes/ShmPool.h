@@ -8,6 +8,8 @@ namespace Wayland
 
 using pixel = uint32_t;
 
+class Application;
+
 class PoolData
 {
 public:
@@ -39,7 +41,7 @@ public:
             Free();
     }
 
-    bool Create(int fd);
+    bool Create(Application * app, int fd);
     void Free();
     wl_shm_pool * Get() const { return _pool; }
 

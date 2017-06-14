@@ -1,2 +1,1 @@
-# kylin-gst-omx
-# cmake_apps
+# weston_apps

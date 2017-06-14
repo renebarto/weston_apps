@@ -10,9 +10,10 @@ project(wayland-demo2)
 #message(STATUS ${WAYLAND_CLIENT_LIBRARIES})
 
 set(WAYLAND_DEMO2_SOURCE_FILES
-    main.cpp)
+    main.cpp
+    Application.cpp)
 set(WAYLAND_DEMO2_HEADER_FILES
-    )
+    Application.h)
 set(WAYLAND_DEMO2_LIBS
     wayland-classes
     wayland-client-shared)

@@ -2,7 +2,7 @@
 
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include "Display.h"
+#include "../wayland-demo1/Application.h"
 
 namespace Wayland
 {
@@ -37,7 +37,7 @@ PoolData::~PoolData()
     _memory = {};
 }
 
-bool ShmPool::Create(int fd)
+bool ShmPool::Create(Application * app, int fd)
 {
     struct stat stat;
 
@@ -52,7 +52,7 @@ bool ShmPool::Create(int fd)
         return false;
     }
 
-    _pool = wl_shm_create_pool(Display::Shm(), data->FD(), static_cast<int32_t>(data->Capacity()));
+    _pool = wl_shm_create_pool(app->GetShm(), data->FD(), static_cast<int32_t>(data->Capacity()));
 
     if (_pool == nullptr)
     {

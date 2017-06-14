@@ -2,13 +2,11 @@
 #include <zconf.h>
 #include <iostream>
 #include <wayland-client.h>
-#include "helpers.h"
+#include <ShmPool.h>
+#include <Surface.h>
+#include <Buffer.h>
 
-#include "Registry.h"
-#include "Display.h"
-#include "ShmPool.h"
-#include "Surface.h"
-#include "Buffer.h"
+#include "Application.h"
 #include "Pointer.h"
 
 using namespace std;
@@ -29,13 +27,9 @@ void OnButtonPressed(uint32_t button)
 
 int main(int argc, char * argv[])
 {
-    Wayland::Display display;
-
-    if (!display.Setup())
+    Wayland::Application app;
+    if (!app.Setup())
         return EXIT_FAILURE;
-    Wayland::Registry registry(display);
-    registry.AddListener(&display);
-    display.Roundtrip();
 
     int image = open("images.bin", O_RDWR);
 
@@ -46,14 +40,14 @@ int main(int argc, char * argv[])
     }
 
     Wayland::ShmPool pool;
-    pool.Create(image);
+    pool.Create(&app, image);
     Wayland::ShellSurface surface;
-    surface.Create(Wayland::Display::Compositor(), Wayland::Display::Shell());
+    surface.Create(app.GetCompositor(), app.GetShell());
     Wayland::Buffer buffer;
     buffer.Create(pool, WIDTH, HEIGHT);
     buffer.Bind(surface);
-    Wayland::Pointer * pointer = display.GetPointer();
-    if (!pointer->SetFromPool(display.Compositor(), pool, CURSOR_WIDTH, CURSOR_HEIGHT, CURSOR_HOT_SPOT_X, CURSOR_HOT_SPOT_Y))
+    Wayland::Pointer * pointer = app.GetPointer();
+    if (!pointer->SetFromPool(app.GetCompositor(), pool, CURSOR_WIDTH, CURSOR_HEIGHT, CURSOR_HOT_SPOT_X, CURSOR_HOT_SPOT_Y))
     {
         cerr << "Error setting pointer" << endl;
         return EXIT_FAILURE;
@@ -63,7 +57,7 @@ int main(int argc, char * argv[])
 
     while (!done)
     {
-        if (!display.Dispatch())
+        if (!app.Dispatch())
         {
             cerr << "Main loop error" << endl;
             done = true;
@@ -72,14 +66,13 @@ int main(int argc, char * argv[])
 
     cerr << "Exiting sample wayland client..." << endl;
 
-    pointer->Release();
+    pointer->Reset();
     buffer.Free();
     surface.Destroy();
     pool.Free();
     close(image);
 
-    registry.Cleanup();
-    display.Cleanup();
+    app.Cleanup();
 
     return EXIT_SUCCESS;
 }

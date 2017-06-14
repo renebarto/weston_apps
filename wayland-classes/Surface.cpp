@@ -32,9 +32,9 @@ Surface::~Surface()
         Destroy();
 }
 
-bool Surface::Create(wl_compositor * compositor)
+bool Surface::Create(Compositor * compositor)
 {
-    _surface = wl_compositor_create_surface(compositor);
+    _surface = wl_compositor_create_surface(compositor->Get());
     return true;
 }
 
@@ -67,13 +67,10 @@ ShellSurface::~ShellSurface()
 {
 }
 
-bool ShellSurface::Create(wl_compositor * compositor, wl_shell * shell)
+bool ShellSurface::Create(Compositor * compositor, wl_shell * shell)
 {
     Surface * surface = new Surface();
     surface->Create(compositor);
-
-    if (surface == nullptr)
-        return false;
 
     _shellSurface = wl_shell_get_shell_surface(shell, surface->Get());
 
@@ -88,6 +85,7 @@ bool ShellSurface::Create(wl_compositor * compositor, wl_shell * shell)
     wl_shell_surface_set_toplevel(_shellSurface);
     wl_shell_surface_set_user_data(_shellSurface, surface);
     wl_surface_set_user_data(surface->Get(), nullptr);
+    return true;
 }
 
 void ShellSurface::Destroy()

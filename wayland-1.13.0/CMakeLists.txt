@@ -15,7 +15,9 @@ find_package(EXPAT REQUIRED)
 find_package(LibXml2 REQUIRED)
 find_package(Wayland QUIET)
 
-set(WAYLAND_COMPILE_DEFINITIONS HAVE_CONFIG_H WAYLAND_DEBUG)
+set(WAYLAND_COMPILE_DEFINITIONS HAVE_CONFIG_H
+#    WAYLAND_DEBUG
+    )
 set(WAYLAND_COMPILER_OPTIONS -Wall -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -fvisibility=hidden)
 set(WAYLAND_INCLUDE_DIRS . src protocol ${SYSTEM_INCLUDES})
 

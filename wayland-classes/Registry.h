@@ -12,9 +12,9 @@ class IRegistryListener;
 class Registry
 {
 public:
-    Registry(const Display & display);
+    Registry(const Display * display);
     ~Registry();
-    void AddListener(IRegistryListener const * registryListener);
+    void AddListener(IRegistryListener * registryListener);
     void RemoveListener() { AddListener(nullptr); }
     void Cleanup();
 

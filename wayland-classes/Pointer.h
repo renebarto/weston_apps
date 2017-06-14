@@ -8,41 +8,35 @@ namespace Wayland
 class ShmPool;
 class Surface;
 class Buffer;
+class Compositor;
 class IPointerListener;
-
-class PointerData
-{
-public:
-    PointerData();
-    ~PointerData();
-
-    Surface * _surface;
-    Buffer * _buffer;
-    int32_t _hotspotX;
-    int32_t _hotspotY;
-    wl_surface * _targetSurface;
-};
 
 class Pointer
 {
 public:
     Pointer(wl_pointer * pointer);
-    ~Pointer()
-    {
-        wl_pointer_destroy(_pointer);
-        _pointer = nullptr;
-    }
+    ~Pointer();
 
-    void AddListener(IPointerListener const * pointerListener);
+    wl_pointer * Get() { return _pointer; }
+    void AddListener(IPointerListener * pointerListener);
     void RemoveListener() { AddListener(nullptr); }
-    bool SetFromPool(wl_compositor * compositor, ShmPool & pool,
+    bool SetFromPool(Compositor * compositor, ShmPool & pool,
                      unsigned width, unsigned height,
                      int32_t hotspotX, int32_t hotspotY);
 
-    void Release();
+    void Reset();
+    wl_surface * GetTargetSurface() { return _targetSurface; }
+    void SetTargetSurface(wl_surface * surface) { _targetSurface = surface; }
+    void AttachBufferToSurface();
+    void SetCursor(uint32_t serial);
 
 private:
     wl_pointer * _pointer;
+    wl_surface * _targetSurface;
+    Surface * _surface;
+    Buffer * _buffer;
+    int32_t _hotspotX;
+    int32_t _hotspotY;
 };
 
 } // namespace Wayland

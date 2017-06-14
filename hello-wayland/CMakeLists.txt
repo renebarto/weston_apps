@@ -11,9 +11,9 @@ project(hello-wayland)
 
 set(HELLO_WAYLAND_SOURCE_FILES
     main.cpp
-    helpers.c)
+    Application.cpp)
 set(HELLO_WAYLAND_HEADER_FILES
-    helpers.h)
+    Application.h)
 set(HELLO_WAYLAND_DATA_FILES
     images.bin)
 set(HELLO_WAYLAND_LIBS
@@ -21,8 +21,6 @@ set(HELLO_WAYLAND_LIBS
     wayland-client-shared)
 
 add_executable(${PROJECT_NAME} ${HELLO_WAYLAND_SOURCE_FILES} ${HELLO_WAYLAND_HEADER_FILES})
-#target_include_directories(${PROJECT_NAME} PRIVATE ${WAYLAND_CLIENT_INCLUDE_DIR})
-#target_link_libraries(${PROJECT_NAME} ${WAYLAND_CLIENT_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${HELLO_WAYLAND_LIBS})
 add_dependencies(${PROJECT_NAME} wayland-classes)
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
