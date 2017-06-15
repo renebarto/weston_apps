@@ -26,7 +26,8 @@ set(WAYLAND_CLASSES_HEADER_FILES
     IPointerListener.h
     IKeyboardListener.h)
 set(WAYLAND_CLASSES_INCLUDE_DIRS
-    .)
+    .
+    ${SYSTEM_INCLUDES})
 set(WAYLAND_CLASSES_LIBS
     wayland-client-shared)
 

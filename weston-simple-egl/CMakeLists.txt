@@ -14,21 +14,63 @@ find_package(WaylandEGL REQUIRED)
 message(STATUS "EGL_INCLUDE_DIR ${EGL_INCLUDE_DIRS}")
 message(STATUS "EGL_LIBRARY ${EGL_LIBRARIES}")
 
-set(SOURCE_FILES
+add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/xdg-shell-unstable-v6-protocol.c
+    DEPENDS wayland-protocols-1.7 wayland-scanner
+    COMMAND $<TARGET_FILE:wayland-scanner> code < ../wayland-protocols-1.7/unstable/xdg-shell/xdg-shell-unstable-v6.xml > protocol/xdg-shell-unstable-v6-protocol.c
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    VERBATIM)
+add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/xdg-shell-unstable-v6-server-protocol.h
+    DEPENDS wayland-protocols-1.7 wayland-scanner
+    COMMAND $<TARGET_FILE:wayland-scanner> server-header < ../wayland-protocols-1.7/unstable/xdg-shell/xdg-shell-unstable-v6.xml > protocol/xdg-shell-unstable-v6-server-protocol.h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    VERBATIM)
+add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/xdg-shell-unstable-v6-client-protocol.h
+    DEPENDS wayland-protocols-1.7 wayland-scanner
+    COMMAND $<TARGET_FILE:wayland-scanner> client-header < ../wayland-protocols-1.7/unstable/xdg-shell/xdg-shell-unstable-v6.xml > protocol/xdg-shell-unstable-v6-client-protocol.h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    VERBATIM)
+
+add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/ivi-application-protocol.c
+    DEPENDS wayland-protocols-1.7 wayland-scanner
+    COMMAND $<TARGET_FILE:wayland-scanner> code < ../weston-2.0.0/protocol/ivi-application.xml > protocol/ivi-application-protocol.c
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    VERBATIM)
+add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/ivi-application-server-protocol.h
+    DEPENDS wayland-protocols-1.7 wayland-scanner
+    COMMAND $<TARGET_FILE:wayland-scanner> server-header < ../weston-2.0.0/protocol/ivi-application.xml > protocol/ivi-application-server-protocol.h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    VERBATIM)
+add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/ivi-application-client-protocol.h
+    DEPENDS wayland-protocols-1.7 wayland-scanner
+    COMMAND $<TARGET_FILE:wayland-scanner> client-header < ../weston-2.0.0/protocol/ivi-application.xml > protocol/ivi-application-client-protocol.h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    VERBATIM)
+
+set(WESTON_SIMPL_EGL_DEFINES
+    ENABLE_EGL)
+set(WESTON_SIMPL_EGL_SOURCE_FILES
     main.cpp
-    Application.cpp)
-set(HEADER_FILES
-    Application.h)
-add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${HEADER_FILES})
+    Application.cpp
+    protocol/xdg-shell-unstable-v6-protocol.c
+    protocol/ivi-application-protocol.c)
+set(WESTON_SIMPL_EGL_HEADER_FILES
+    Application.h
+    protocol/xdg-shell-unstable-v6-client-protocol.h
+    protocol/ivi-application-client-protocol.h)
+add_executable(${PROJECT_NAME} ${WESTON_SIMPL_EGL_SOURCE_FILES} ${WESTON_SIMPL_EGL_HEADER_FILES})
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    ${WESTON_SIMPL_EGL_DEFINES})
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${EGL_INCLUDE_DIRS}
-    ${WAYLAND_EGL_INCLUDE_DIR})
+    ${WAYLAND_EGL_INCLUDE_DIR}
+    ${SYSTEM_INCLUDES})
 target_link_libraries(${PROJECT_NAME}
     ${GLEW_LIBRARY}
     ${OPENGL_LIBRARY}
     ${EGL_LIBRARIES}
     wayland-classes
     wayland-client-shared
+    wayland-cursor-shared
     ${WAYLAND_EGL_LIBRARIES})
 add_dependencies(${PROJECT_NAME}
     wayland-classes

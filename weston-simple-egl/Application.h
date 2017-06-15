@@ -3,6 +3,13 @@
 #include <string.h>
 #include <iostream>
 #include <wayland-client.h>
+#include <wayland-egl.h>
+#include <wayland-cursor.h>
+#include <GLES2/gl2.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include "protocol/xdg-shell-unstable-v6-client-protocol.h"
+#include "protocol/ivi-application-client-protocol.h"
 #include "IRegistryListener.h"
 #include "IPointerListener.h"
 #include "IKeyboardListener.h"
@@ -13,10 +20,72 @@ namespace Wayland
 class Display;
 class Compositor;
 class Seat;
-class Keyboard;
 class Pointer;
+class Keyboard;
+class Touch;
+class Cursor;
+class Registry;
+class Surface;
+
 using KeyCode = int;
 using KeyboardCallbackFunction = void (*)();
+
+class AppDisplay;
+class AppWindow;
+
+class AppDisplay
+{
+    Display *display;
+    wl_registry *registry;
+    wl_compositor *compositor;
+    zxdg_shell_v6 *shell;
+    wl_seat *seat;
+    wl_pointer *pointer;
+    wl_touch *touch;
+    wl_keyboard *keyboard;
+    wl_shm *shm;
+    wl_cursor_theme *cursor_theme;
+    wl_cursor *default_cursor;
+    wl_surface *cursor_surface;
+    struct
+    {
+        EGLDisplay dpy;
+        EGLContext ctx;
+        EGLConfig conf;
+    } egl;
+    AppWindow * window;
+    struct ivi_application *ivi_application;
+
+    PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC swap_buffers_with_damage;
+};
+
+struct Geometry
+{
+    int width, height;
+};
+
+struct AppWindow
+{
+    AppDisplay *display;
+    Geometry geometry, window_size;
+    struct
+    {
+        GLuint rotation_uniform;
+        GLuint pos;
+        GLuint col;
+    } gl;
+
+    uint32_t benchmark_time, frames;
+    wl_egl_window *native;
+    wl_surface *surface;
+    zxdg_surface_v6 *xdg_surface;
+    zxdg_toplevel_v6 *xdg_toplevel;
+    struct ivi_surface *ivi_surface;
+    EGLSurface egl_surface;
+    wl_callback *callback;
+    int fullscreen, opaque, buffer_size, frame_sync;
+    bool wait_for_configure;
+};
 
 class Application :
     public IRegistryListener,
