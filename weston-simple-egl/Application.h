@@ -30,44 +30,41 @@ class Surface;
 using KeyCode = int;
 using KeyboardCallbackFunction = void (*)();
 
-class AppDisplay;
-class AppWindow;
-
-class AppDisplay
+struct display
 {
-    Display *display;
-    wl_registry *registry;
-    wl_compositor *compositor;
-    zxdg_shell_v6 *shell;
-    wl_seat *seat;
-    wl_pointer *pointer;
-    wl_touch *touch;
-    wl_keyboard *keyboard;
-    wl_shm *shm;
-    wl_cursor_theme *cursor_theme;
-    wl_cursor *default_cursor;
-    wl_surface *cursor_surface;
+    struct wl_display *display;
+    struct wl_registry *registry;
+    struct wl_compositor *compositor;
+    struct zxdg_shell_v6 *shell;
+    struct wl_seat *seat;
+    struct wl_pointer *pointer;
+    struct wl_touch *touch;
+    struct wl_keyboard *keyboard;
+    struct wl_shm *shm;
+    struct wl_cursor_theme *cursor_theme;
+    struct wl_cursor *default_cursor;
+    struct wl_surface *cursor_surface;
     struct
     {
         EGLDisplay dpy;
         EGLContext ctx;
         EGLConfig conf;
     } egl;
-    AppWindow * window;
+    struct window *window;
     struct ivi_application *ivi_application;
 
     PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC swap_buffers_with_damage;
 };
 
-struct Geometry
+struct geometry
 {
     int width, height;
 };
 
-struct AppWindow
+struct window
 {
-    AppDisplay *display;
-    Geometry geometry, window_size;
+    struct display *display;
+    struct geometry geometry, window_size;
     struct
     {
         GLuint rotation_uniform;
@@ -76,15 +73,30 @@ struct AppWindow
     } gl;
 
     uint32_t benchmark_time, frames;
-    wl_egl_window *native;
-    wl_surface *surface;
-    zxdg_surface_v6 *xdg_surface;
-    zxdg_toplevel_v6 *xdg_toplevel;
+    struct wl_egl_window *native;
+    struct wl_surface *surface;
+    struct zxdg_surface_v6 *xdg_surface;
+    struct zxdg_toplevel_v6 *xdg_toplevel;
     struct ivi_surface *ivi_surface;
     EGLSurface egl_surface;
-    wl_callback *callback;
+    struct wl_callback *callback;
     int fullscreen, opaque, buffer_size, frame_sync;
     bool wait_for_configure;
+};
+
+struct Settings
+{
+    Settings()
+        : fullscreen()
+        , opaque()
+        , bufferSize(0)
+        , frameSync(true)
+    {
+    }
+    bool fullscreen;
+    bool opaque;
+    int bufferSize;
+    bool frameSync;
 };
 
 class Application :
@@ -96,20 +108,33 @@ public:
     Application();
     ~Application();
 
-    bool Setup();
+    bool Setup(const Settings & settings);
     void Cleanup();
+    void Start() { _isRunning = true; }
+    void Stop() { _isRunning = false; }
     bool Dispatch();
+    bool IsRunning() { return _isRunning; }
 
-    Compositor * GetCompositor() { return _compositor; }
-    wl_shm * GetShm() { return _shm; }
-    wl_shell * GetShell() { return _shell; }
-    const Seat * GetSeat() const { return _seat; }
-    Pointer * GetPointer() { return _pointer; }
-    const Keyboard * GetKeyboard() const { return _keyboard; }
+//    Compositor * GetCompositor() { return _compositor; }
+//    wl_shm * GetShm() { return _shm; }
+//    wl_shell * GetShell() { return _shell; }
+//    const Seat * GetSeat() const { return _seat; }
+//    Pointer * GetPointer() { return _pointer; }
+//    const Keyboard * GetKeyboard() const { return _keyboard; }
 
     void SetKeyboardCallback(KeyCode key, KeyboardCallbackFunction callback);
 
 private:
+    void InitEGL(struct display * display, struct window * window);
+    void FiniEGL(struct display * display);
+    GLuint CreateShader(struct window * window, const char * source, GLenum shader_type);
+    void InitGL(struct window * window);
+    void CreateXDGSurface(struct window * window, struct display * display);
+    void CreateIVISurface(struct window * window, struct display * display);
+    void CreateSurface(struct window * window);
+    void DestroySurface(struct window * window);
+    void Redraw(void * data, struct wl_callback * callback, uint32_t time);
+
     virtual void RegistryCallbackAdd(wl_registry *wl_registry,
                                      uint32_t name,
                                      const char *interface,
@@ -164,15 +189,19 @@ private:
                                     int32_t rate,
                                     int32_t delay) override final;
 
-    Display * _display;
-    Compositor * _compositor;
-    wl_shm * _shm;
-    wl_shell * _shell;
-    Seat * _seat;
-    Pointer * _pointer;
-    Keyboard * _keyboard;
-    KeyboardCallbackFunction _keyboardCallback;
-    KeyCode _keyFilter;
+    window _window;
+    display _display;
+
+//    Display * _display;
+//    Compositor * _compositor;
+//    wl_shm * _shm;
+//    wl_shell * _shell;
+//    Seat * _seat;
+//    Pointer * _pointer;
+//    Keyboard * _keyboard;
+//    KeyboardCallbackFunction _keyboardCallback;
+//    KeyCode _keyFilter;
+    bool _isRunning;
 };
 
 } // namespace Wayland
