@@ -11,7 +11,7 @@ class Display
 {
 public:
     Display();
-    ~Display() {}
+    ~Display();
 
     bool Setup(const char * name);
     void Roundtrip();

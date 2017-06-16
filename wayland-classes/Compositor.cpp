@@ -11,6 +11,11 @@ Compositor::Compositor(wl_compositor *compositor)
 
 Compositor::~Compositor()
 {
+    Cleanup();
+}
+
+void Compositor::Cleanup()
+{
     if (_compositor)
         wl_compositor_destroy(_compositor);
     _compositor = nullptr;

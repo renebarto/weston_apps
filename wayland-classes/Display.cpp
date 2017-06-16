@@ -12,6 +12,11 @@ Display::Display()
 {
 }
 
+Display::~Display()
+{
+    Cleanup();
+}
+
 bool Display::Setup(const char * name)
 {
     _display = wl_display_connect(name);
@@ -20,7 +25,12 @@ bool Display::Setup(const char * name)
 
 void Display::Cleanup()
 {
-    wl_display_disconnect(_display);
+    if (_display)
+    {
+        wl_display_flush(_display);
+        wl_display_disconnect(_display);
+    }
+    _display = nullptr;
 }
 
 void Display::Roundtrip()

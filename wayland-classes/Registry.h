@@ -14,7 +14,8 @@ class Registry
 public:
     Registry(const Display * display);
     ~Registry();
-    void AddListener(IRegistryListener * registryListener);
+
+    void AddListener(IRegistryListener * listener);
     void RemoveListener() { AddListener(nullptr); }
     void Cleanup();
 

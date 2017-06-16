@@ -71,8 +71,8 @@ void Application::SetKeyboardCallback(KeyCode key, KeyboardCallbackFunction call
     _keyFilter = key;
 }
 
-void Application::RegistryCallbackAdd(wl_registry *registry, uint32_t name,
-                                  const char *interface, uint32_t version)
+void Application::OnRegistryAdd(wl_registry *registry, uint32_t name,
+                                const char *interface, uint32_t version)
 {
     if (strcmp(interface, wl_compositor_interface.name) == 0)
         _compositor = new Compositor(reinterpret_cast<wl_compositor *>(wl_registry_bind(registry, name, &wl_compositor_interface, std::min(version, uint32_t(4)))));
@@ -91,14 +91,14 @@ void Application::RegistryCallbackAdd(wl_registry *registry, uint32_t name,
 }
 
 // Is this ever called?
-void Application::RegistryCallbackRemove(wl_registry *registry, uint32_t name)
+void Application::OnRegistryRemove(wl_registry *registry, uint32_t name)
 {
 
 }
 
-void Application::PointerEnter(wl_pointer * pointer,
-                               uint32_t serial, wl_surface * surface,
-                               wl_fixed_t surfaceX, wl_fixed_t surfaceY)
+void Application::OnPointerEnter(wl_pointer *pointer,
+                                 uint32_t serial, wl_surface *surface,
+                                 wl_fixed_t surfaceX, wl_fixed_t surfaceY)
 {
     assert(pointer == _pointer->Get());
     _pointer->SetTargetSurface(surface);
@@ -106,22 +106,22 @@ void Application::PointerEnter(wl_pointer * pointer,
     _pointer->SetCursor(serial);
 }
 
-void Application::PointerLeave(wl_pointer * pointer, uint32_t serial,
-                               wl_surface * surface)
+void Application::OnPointerLeave(wl_pointer *pointer, uint32_t serial,
+                                 wl_surface *surface)
 {
     assert(pointer == _pointer->Get());
 
 }
 
-void Application::PointerMotion(wl_pointer * pointer, uint32_t time,
-                                wl_fixed_t surfaceX, wl_fixed_t surfaceY)
+void Application::OnPointerMotion(wl_pointer *pointer, uint32_t time,
+                                  wl_fixed_t surfaceX, wl_fixed_t surfaceY)
 {
     assert(pointer == _pointer->Get());
 
 }
 
-void Application::PointerButton(wl_pointer * pointer, uint32_t serial,
-                                uint32_t time, uint32_t button, uint32_t state)
+void Application::OnPointerButton(wl_pointer *pointer, uint32_t serial,
+                                  uint32_t time, uint32_t button, uint32_t state)
 {
     assert(pointer == _pointer->Get());
     CallbackFunction callback;
@@ -131,41 +131,41 @@ void Application::PointerButton(wl_pointer * pointer, uint32_t serial,
         callback(button);
 }
 
-void Application::PointerAxis(wl_pointer * pointer, uint32_t time,
-                              uint32_t axis, wl_fixed_t value)
+void Application::OnPointerAxis(wl_pointer *pointer, uint32_t time,
+                                uint32_t axis, wl_fixed_t value)
 {
     assert(pointer == _pointer->Get());
 
 }
 
-void Application::KeyboardKeymap(wl_keyboard * keyboard,
-                                 uint32_t format,
-                                 int32_t fd,
-                                 uint32_t size)
+void Application::OnKeyboardKeymap(wl_keyboard *keyboard,
+                                   uint32_t format,
+                                   int32_t fd,
+                                   uint32_t size)
 {
     assert(keyboard == _keyboard->Get());
 }
 
-void Application::KeyboardEnter(wl_keyboard * keyboard,
+void Application::OnKeyboardEnter(wl_keyboard *keyboard,
+                                  uint32_t serial,
+                                  wl_surface *surface,
+                                  wl_array *keys)
+{
+    assert(keyboard == _keyboard->Get());
+}
+
+void Application::OnKeyboardLeave(wl_keyboard *keyboard,
+                                  uint32_t serial,
+                                  wl_surface *surface)
+{
+    assert(keyboard == _keyboard->Get());
+}
+
+void Application::OnKeyboardKey(wl_keyboard *keyboard,
                                 uint32_t serial,
-                                wl_surface * surface,
-                                wl_array * keys)
-{
-    assert(keyboard == _keyboard->Get());
-}
-
-void Application::KeyboardLeave(wl_keyboard * keyboard,
-                                uint32_t serial,
-                                wl_surface * surface)
-{
-    assert(keyboard == _keyboard->Get());
-}
-
-void Application::KeyboardKey(wl_keyboard * keyboard,
-                              uint32_t serial,
-                              uint32_t time,
-                              uint32_t key,
-                              uint32_t state)
+                                uint32_t time,
+                                uint32_t key,
+                                uint32_t state)
 {
     assert(keyboard == _keyboard->Get());
 
@@ -176,19 +176,19 @@ void Application::KeyboardKey(wl_keyboard * keyboard,
     }
 }
 
-void Application::KeyboardModifiers(wl_keyboard * keyboard,
-                                    uint32_t serial,
-                                    uint32_t mods_depressed,
-                                    uint32_t mods_latched,
-                                    uint32_t mods_locked,
-                                    uint32_t group)
+void Application::OnKeyboardModifiers(wl_keyboard *keyboard,
+                                      uint32_t serial,
+                                      uint32_t mods_depressed,
+                                      uint32_t mods_latched,
+                                      uint32_t mods_locked,
+                                      uint32_t group)
 {
     assert(keyboard == _keyboard->Get());
 }
 
-void Application::KeyboardRepeatInfo(wl_keyboard * keyboard,
-                                     int32_t rate,
-                                     int32_t delay)
+void Application::OnKeyboardRepeatInfo(wl_keyboard *keyboard,
+                                       int32_t rate,
+                                       int32_t delay)
 {
     assert(keyboard == _keyboard->Get());
 }

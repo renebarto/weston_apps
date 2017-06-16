@@ -6,18 +6,15 @@
 namespace Wayland
 {
 
-class Surface;
-
 class Keyboard
 {
 public:
-    Keyboard(wl_keyboard * pointer);
+    Keyboard(wl_keyboard * keyboard);
     ~Keyboard();
 
     const wl_keyboard * Get() const { return _keyboard; }
-    void AddListener(IKeyboardListener * keyboardListener);
+    void AddListener(IKeyboardListener * listener);
     void RemoveListener() { AddListener(nullptr); }
-    bool Set(wl_compositor * compositor);
     void Reset();
 
 private:

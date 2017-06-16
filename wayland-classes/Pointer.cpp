@@ -14,11 +14,11 @@ static void PointerEnter(void * data,
                          wl_fixed_t surfaceX, wl_fixed_t surfaceY)
 {
 #ifdef WAYLAND_CLASSES_DEBUG
-    fprintf(stderr, "## pointer_enter_callback(data %p, pointer %p, serial %u, surface %p, X %d, Y %d)\n",
+    fprintf(stderr, "## pointer_enter(data %p, pointer %p, serial %u, surface %p, X %d, Y %d)\n",
             data, pointer, serial, surface, surfaceX, surfaceY);
 #endif
     IPointerListener * listener = reinterpret_cast<IPointerListener *>(data);
-    listener->PointerEnter(pointer, serial, surface, surfaceX, surfaceY);
+    listener->OnPointerEnter(pointer, serial, surface, surfaceX, surfaceY);
 }
 
 static void PointerLeave(void * data,
@@ -26,11 +26,11 @@ static void PointerLeave(void * data,
                          wl_surface * surface)
 {
 #ifdef WAYLAND_CLASSES_DEBUG
-    fprintf(stderr, "## pointer_leave_callback(data %p, pointer %p, serial %u, surface %p)\n",
+    fprintf(stderr, "## pointer_leave(data %p, pointer %p, serial %u, surface %p)\n",
             data, pointer, serial, surface);
 #endif
     IPointerListener * listener = reinterpret_cast<IPointerListener *>(data);
-    listener->PointerLeave(pointer, serial, surface);
+    listener->OnPointerLeave(pointer, serial, surface);
 }
 
 static void PointerMotion(void * data,
@@ -38,11 +38,11 @@ static void PointerMotion(void * data,
                           wl_fixed_t surfaceX, wl_fixed_t surfaceY)
 {
 #ifdef WAYLAND_CLASSES_DEBUG
-    fprintf(stderr, "## pointer_motion_callback(data %p, pointer %p, time %u, X %d, Y %d)\n",
+    fprintf(stderr, "## pointer_motion(data %p, pointer %p, time %u, X %d, Y %d)\n",
             data, pointer, time, surfaceX, surfaceY);
 #endif
     IPointerListener * listener = reinterpret_cast<IPointerListener *>(data);
-    listener->PointerMotion(pointer, time, surfaceX, surfaceY);
+    listener->OnPointerMotion(pointer, time, surfaceX, surfaceY);
 }
 
 static void PointerButton(void *data,
@@ -50,11 +50,11 @@ static void PointerButton(void *data,
                           uint32_t time, uint32_t button, uint32_t state)
 {
 #ifdef WAYLAND_CLASSES_DEBUG
-    fprintf(stderr, "## pointer_button_callback(data %p, pointer %p, serial %u, time %u, button %d, state %u)\n",
+    fprintf(stderr, "## pointer_button(data %p, pointer %p, serial %u, time %u, button %d, state %u)\n",
             data, pointer, serial, time, button, state);
 #endif
     IPointerListener * listener = reinterpret_cast<IPointerListener *>(data);
-    listener->PointerButton(pointer, serial, time, button, state);
+    listener->OnPointerButton(pointer, serial, time, button, state);
 }
 
 static void PointerAxis(void *data,
@@ -62,11 +62,11 @@ static void PointerAxis(void *data,
                         uint32_t axis, wl_fixed_t value)
 {
 #ifdef WAYLAND_CLASSES_DEBUG
-    fprintf(stderr, "## pointer_axis_callback(data %p, pointer %p, time %u, axis %u, value %d)\n",
+    fprintf(stderr, "## pointer_axis(data %p, pointer %p, time %u, axis %u, value %d)\n",
             data, pointer, time, axis, value);
 #endif
     IPointerListener * listener = reinterpret_cast<IPointerListener *>(data);
-    listener->PointerAxis(pointer, time, axis, value);
+    listener->OnPointerAxis(pointer, time, axis, value);
 }
 
 static const wl_pointer_listener PointerListener = {
@@ -95,9 +95,9 @@ Pointer::~Pointer()
     _pointer = nullptr;
 }
 
-void Pointer::AddListener(IPointerListener * pointerListener)
+void Pointer::AddListener(IPointerListener * listener)
 {
-    wl_pointer_add_listener(_pointer, &PointerListener, pointerListener);
+    wl_pointer_add_listener(_pointer, &PointerListener, listener);
 }
 
 bool Pointer::SetFromPool(Compositor * compositor, ShmPool & pool,

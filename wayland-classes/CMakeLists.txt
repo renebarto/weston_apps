@@ -11,6 +11,7 @@ set(WAYLAND_CLASSES_SOURCE_FILES
     Buffer.cpp
     Pointer.cpp
     Keyboard.cpp
+    Touch.cpp
     Seat.cpp)
 set(WAYLAND_CLASSES_HEADER_FILES
     Compositor.h
@@ -21,10 +22,13 @@ set(WAYLAND_CLASSES_HEADER_FILES
     Buffer.h
     Pointer.h
     Keyboard.h
+    Touch.h
     Seat.h
     IRegistryListener.h
     IPointerListener.h
-    IKeyboardListener.h)
+    IKeyboardListener.h
+    ITouchListener.h
+    ISeatListener.h)
 set(WAYLAND_CLASSES_INCLUDE_DIRS
     .
     ${SYSTEM_INCLUDES})

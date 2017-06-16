@@ -1,9 +1,6 @@
 #include "Keyboard.h"
 
 #include <cstdio>
-//#include "ShmPool.h"
-//#include "Surface.h"
-//#include "Buffer.h"
 
 using namespace Wayland;
 
@@ -14,11 +11,11 @@ static void KeyboardKeymap(void * data,
                            uint32_t size)
 {
 #ifdef WAYLAND_CLASSES_DEBUG
-    fprintf(stderr, "## keyboard_keymap_callback(data %p, keyboard %p, format %u, fd %d, size %u)\n",
+    fprintf(stderr, "## keyboard_keymap(data %p, keyboard %p, format %u, fd %d, size %u)\n",
             data, keyboard, format, fd, size);
 #endif
     IKeyboardListener * listener = reinterpret_cast<IKeyboardListener *>(data);
-    listener->KeyboardKeymap(keyboard, format, fd, size);
+    listener->OnKeyboardKeymap(keyboard, format, fd, size);
 }
 
 static void KeyboardEnter(void * data,
@@ -28,11 +25,11 @@ static void KeyboardEnter(void * data,
                           wl_array * keys)
 {
 #ifdef WAYLAND_CLASSES_DEBUG
-    fprintf(stderr, "## keyboard_enter_callback(data %p, keyboard %p, serial %u, surface %p, keys %p)\n",
+    fprintf(stderr, "## keyboard_enter(data %p, keyboard %p, serial %u, surface %p, keys %p)\n",
             data, keyboard, serial, surface, keys);
 #endif
     IKeyboardListener * listener = reinterpret_cast<IKeyboardListener *>(data);
-    listener->KeyboardEnter(keyboard, serial, surface, keys);
+    listener->OnKeyboardEnter(keyboard, serial, surface, keys);
 }
 
 static void KeyboardLeave(void * data,
@@ -41,11 +38,11 @@ static void KeyboardLeave(void * data,
                           wl_surface * surface)
 {
 #ifdef WAYLAND_CLASSES_DEBUG
-    fprintf(stderr, "## keyboard_leave_callback(data %p, keyboard %p, serial %u, surface %p)\n",
+    fprintf(stderr, "## keyboard_leave(data %p, keyboard %p, serial %u, surface %p)\n",
             data, keyboard, serial, surface);
 #endif
     IKeyboardListener * listener = reinterpret_cast<IKeyboardListener *>(data);
-    listener->KeyboardLeave(keyboard, serial, surface);
+    listener->OnKeyboardLeave(keyboard, serial, surface);
 }
 
 static void KeyboardKey(void * data,
@@ -56,11 +53,11 @@ static void KeyboardKey(void * data,
                         uint32_t state)
 {
 #ifdef WAYLAND_CLASSES_DEBUG
-    fprintf(stderr, "## keyboard_key_callback(data %p, keyboard %p, serial %u, time %u, key %u, state %u)\n",
+    fprintf(stderr, "## keyboard_key(data %p, keyboard %p, serial %u, time %u, key %u, state %u)\n",
             data, keyboard, serial, time, key, state);
 #endif
     IKeyboardListener * listener = reinterpret_cast<IKeyboardListener *>(data);
-    listener->KeyboardKey(keyboard, serial, time, key, state);
+    listener->OnKeyboardKey(keyboard, serial, time, key, state);
 }
 
 static void KeyboardModifiers(void * data,
@@ -72,11 +69,11 @@ static void KeyboardModifiers(void * data,
                               uint32_t group)
 {
 #ifdef WAYLAND_CLASSES_DEBUG
-    fprintf(stderr, "## keyboard_key_callback(data %p, keyboard %p, serial %u, depressed %u, latched %u, locked %u, group %u)\n",
+    fprintf(stderr, "## keyboard_key(data %p, keyboard %p, serial %u, depressed %u, latched %u, locked %u, group %u)\n",
             data, keyboard, serial, mods_depressed, mods_latched, mods_locked, group);
 #endif
     IKeyboardListener * listener = reinterpret_cast<IKeyboardListener *>(data);
-    listener->KeyboardModifiers(keyboard, serial, mods_depressed, mods_latched, mods_locked, group);
+    listener->OnKeyboardModifiers(keyboard, serial, mods_depressed, mods_latched, mods_locked, group);
 }
 
 static void KeyboardRepeatInfo(void * data,
@@ -85,11 +82,11 @@ static void KeyboardRepeatInfo(void * data,
                                 int32_t delay)
 {
 #ifdef WAYLAND_CLASSES_DEBUG
-    fprintf(stderr, "## keyboard_key_callback(data %p, keyboard %p, rate %d, delay %d)\n",
+    fprintf(stderr, "## keyboard_key(data %p, keyboard %p, rate %d, delay %d)\n",
             data, keyboard, rate, delay);
 #endif
     IKeyboardListener * listener = reinterpret_cast<IKeyboardListener *>(data);
-    listener->KeyboardRepeatInfo(keyboard, rate, delay);
+    listener->OnKeyboardRepeatInfo(keyboard, rate, delay);
 }
 
 static const wl_keyboard_listener KeyboardListener = {
@@ -114,14 +111,9 @@ Keyboard::~Keyboard()
     _keyboard = nullptr;
 }
 
-void Keyboard::AddListener(IKeyboardListener * keyboardListener)
+void Keyboard::AddListener(IKeyboardListener * listener)
 {
-    wl_keyboard_add_listener(_keyboard, &KeyboardListener, keyboardListener);
-}
-
-bool Keyboard::Set(wl_compositor * compositor)
-{
-    return true;
+    wl_keyboard_add_listener(_keyboard, &KeyboardListener, listener);
 }
 
 void Keyboard::Reset()

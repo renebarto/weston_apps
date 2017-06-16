@@ -31,7 +31,6 @@
 //#include <stdbool.h>
 //#include <math.h>
 //#include <assert.h>
-#include <csignal>
 
 //#include <wayland-client.h>
 //#include <wayland-egl.h>
@@ -43,16 +42,10 @@
 //
 //#include "protocol/xdg-shell-unstable-v6-client-protocol.h"
 //#include "protocol/ivi-application-client-protocol.h"
+#include "SignalHandler.h"
 
 using namespace std;
 using namespace Wayland;
-
-bool signalled = false;
-
-static void signal_int(int signum)
-{
-    signalled = true;
-}
 
 static void Usage(int errorCode)
 {
@@ -71,7 +64,7 @@ static void ParseArguments(int argc, char * argv[], Settings & settings)
     for (int i = 1; i < argc; i++)
     {
         if (strcmp("-f", argv[i]) == 0)
-            settings.fullscreen = true;
+            settings.fullScreen = true;
         else if (strcmp("-o", argv[i]) == 0)
             settings.opaque = true;
         else if (strcmp("-s", argv[i]) == 0)
@@ -93,15 +86,17 @@ int main(int argc, char * argv[])
     if (!app.Setup(settings))
         return EXIT_FAILURE;
 
-    struct sigaction sigint;
-    sigint.sa_handler = signal_int;
-    sigemptyset(&sigint.sa_mask);
-    sigint.sa_flags = SA_RESETHAND;
-    sigaction(SIGINT, &sigint, NULL);
-    
+    SignalHandler signalHandler;
+
     app.Start();
-    while (app.IsRunning() && !signalled)
+    while (app.IsRunning())
     {
+        if (signalHandler.CheckSignal(SIGINT))
+        {
+            cerr << "Signalling to stop (SIGINT)" << endl;
+            app.Stop();
+            continue;
+        }
         if (!app.Dispatch())
         {
             cerr << "Main loop error" << endl;

@@ -13,6 +13,12 @@
 #include "IRegistryListener.h"
 #include "IPointerListener.h"
 #include "IKeyboardListener.h"
+#include "ITouchListener.h"
+#include "ISeatListener.h"
+#include "IZXDGShellV6Listener.h"
+#include "IZXDGSurfaceV6Listener.h"
+#include "IZXDGTopLevelV6Listener.h"
+#include "IIVISurfaceListener.h"
 
 namespace Wayland
 {
@@ -26,35 +32,14 @@ class Touch;
 class Cursor;
 class Registry;
 class Surface;
+class Touch;
+class ZXDGShellV6;
+class ZXDGSurfaceV6;
+class ZXDGTopLevelV6;
+class IVISurface;
 
 using KeyCode = int;
 using KeyboardCallbackFunction = void (*)();
-
-struct display
-{
-    struct wl_display *display;
-    struct wl_registry *registry;
-    struct wl_compositor *compositor;
-    struct zxdg_shell_v6 *shell;
-    struct wl_seat *seat;
-    struct wl_pointer *pointer;
-    struct wl_touch *touch;
-    struct wl_keyboard *keyboard;
-    struct wl_shm *shm;
-    struct wl_cursor_theme *cursor_theme;
-    struct wl_cursor *default_cursor;
-    struct wl_surface *cursor_surface;
-    struct
-    {
-        EGLDisplay dpy;
-        EGLContext ctx;
-        EGLConfig conf;
-    } egl;
-    struct window *window;
-    struct ivi_application *ivi_application;
-
-    PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC swap_buffers_with_damage;
-};
 
 struct geometry
 {
@@ -63,7 +48,7 @@ struct geometry
 
 struct window
 {
-    struct display *display;
+    Display *display;
     struct geometry geometry, window_size;
     struct
     {
@@ -75,9 +60,9 @@ struct window
     uint32_t benchmark_time, frames;
     struct wl_egl_window *native;
     struct wl_surface *surface;
-    struct zxdg_surface_v6 *xdg_surface;
-    struct zxdg_toplevel_v6 *xdg_toplevel;
-    struct ivi_surface *ivi_surface;
+    ZXDGSurfaceV6 * xdg_surface;
+    ZXDGTopLevelV6 * xdg_toplevel;
+    IVISurface * ivi_surface;
     EGLSurface egl_surface;
     struct wl_callback *callback;
     int fullscreen, opaque, buffer_size, frame_sync;
@@ -87,13 +72,13 @@ struct window
 struct Settings
 {
     Settings()
-        : fullscreen()
+        : fullScreen()
         , opaque()
-        , bufferSize(0)
+        , bufferSize(32)
         , frameSync(true)
     {
     }
-    bool fullscreen;
+    bool fullScreen;
     bool opaque;
     int bufferSize;
     bool frameSync;
@@ -102,7 +87,13 @@ struct Settings
 class Application :
     public IRegistryListener,
     public IPointerListener,
-    public IKeyboardListener
+    public IKeyboardListener,
+    public ITouchListener,
+    public ISeatListener,
+    public IZXDGShellV6Listener,
+    public IZXDGSurfaceV6Listener,
+    public IZXDGTopLevelV6Listener,
+    public IIVISurfaceListener
 {
 public:
     Application();
@@ -122,85 +113,134 @@ public:
 //    Pointer * GetPointer() { return _pointer; }
 //    const Keyboard * GetKeyboard() const { return _keyboard; }
 
-    void SetKeyboardCallback(KeyCode key, KeyboardCallbackFunction callback);
-
 private:
-    void InitEGL(struct display * display, struct window * window);
-    void FiniEGL(struct display * display);
+    void InitEGL(struct window * window);
+    void FiniEGL();
     GLuint CreateShader(struct window * window, const char * source, GLenum shader_type);
     void InitGL(struct window * window);
-    void CreateXDGSurface(struct window * window, struct display * display);
-    void CreateIVISurface(struct window * window, struct display * display);
+    void CreateXDGSurface(struct window * window);
+    void CreateIVISurface(struct window * window);
     void CreateSurface(struct window * window);
     void DestroySurface(struct window * window);
     void Redraw(void * data, struct wl_callback * callback, uint32_t time);
 
-    virtual void RegistryCallbackAdd(wl_registry *wl_registry,
-                                     uint32_t name,
-                                     const char *interface,
-                                     uint32_t version) override final;
-    virtual void RegistryCallbackRemove(wl_registry *wl_registry,
-                                        uint32_t name) override final;
+    virtual void OnRegistryAdd(wl_registry *wl_registry,
+                               uint32_t name,
+                               const char *interface,
+                               uint32_t version) override final;
+    virtual void OnRegistryRemove(wl_registry *wl_registry,
+                                  uint32_t name) override final;
 
-    virtual void PointerEnter(wl_pointer * pointer,
-                              uint32_t serial, wl_surface * surface,
-                              wl_fixed_t surfaceX, wl_fixed_t surfaceY) override final;
+    virtual void OnPointerEnter(wl_pointer *pointer,
+                                uint32_t serial, wl_surface *surface,
+                                wl_fixed_t surfaceX, wl_fixed_t surfaceY) override final;
 
-    virtual void PointerLeave(wl_pointer * pointer, uint32_t serial,
-                              wl_surface * surface) override final;
+    virtual void OnPointerLeave(wl_pointer *pointer, uint32_t serial,
+                                wl_surface *surface) override final;
 
-    virtual void PointerMotion(wl_pointer * pointer, uint32_t time,
-                               wl_fixed_t surfaceX, wl_fixed_t surfaceY) override final;
+    virtual void OnPointerMotion(wl_pointer *pointer, uint32_t time,
+                                 wl_fixed_t surfaceX, wl_fixed_t surfaceY) override final;
 
-    virtual void PointerButton(wl_pointer * pointer, uint32_t serial,
-                               uint32_t time, uint32_t button, uint32_t state) override final;
+    virtual void OnPointerButton(wl_pointer *pointer, uint32_t serial,
+                                 uint32_t time, uint32_t button, uint32_t state) override final;
 
-    virtual void PointerAxis(wl_pointer * pointer, uint32_t time,
-                             uint32_t axis, wl_fixed_t value) override final;
+    virtual void OnPointerAxis(wl_pointer *pointer, uint32_t time,
+                               uint32_t axis, wl_fixed_t value) override final;
 
-    virtual void KeyboardKeymap(wl_keyboard * keyboard,
-                                uint32_t format,
-                                int32_t fd,
-                                uint32_t size) override final;
+    virtual void OnKeyboardKeymap(wl_keyboard *keyboard,
+                                  uint32_t format,
+                                  int32_t fd,
+                                  uint32_t size) override final;
 
-    virtual void KeyboardEnter(wl_keyboard * keyboard,
+    virtual void OnKeyboardEnter(wl_keyboard *keyboard,
+                                 uint32_t serial,
+                                 wl_surface *surface,
+                                 wl_array *keys) override final;
+
+    virtual void OnKeyboardLeave(wl_keyboard *keyboard,
+                                 uint32_t serial,
+                                 wl_surface *surface) override final;
+
+    virtual void OnKeyboardKey(wl_keyboard *keyboard,
                                uint32_t serial,
-                               wl_surface * surface,
-                               wl_array * keys) override final;
+                               uint32_t time,
+                               uint32_t key,
+                               uint32_t state) override final;
 
-    virtual void KeyboardLeave(wl_keyboard * keyboard,
-                               uint32_t serial,
-                               wl_surface * surface) override final;
+    virtual void OnKeyboardModifiers(wl_keyboard *keyboard,
+                                     uint32_t serial,
+                                     uint32_t mods_depressed,
+                                     uint32_t mods_latched,
+                                     uint32_t mods_locked,
+                                     uint32_t group) override final;
 
-    virtual void KeyboardKey(wl_keyboard * keyboard,
+    virtual void OnKeyboardRepeatInfo(wl_keyboard *keyboard,
+                                      int32_t rate,
+                                      int32_t delay) override final;
+
+    virtual void OnTouchDown(wl_touch * touch,
                              uint32_t serial,
                              uint32_t time,
-                             uint32_t key,
-                             uint32_t state) override final;
+                             wl_surface * surface,
+                             int32_t id,
+                             wl_fixed_t x,
+                             wl_fixed_t y) override final;
 
-    virtual void KeyboardModifiers(wl_keyboard * keyboard,
-                                   uint32_t serial,
-                                   uint32_t mods_depressed,
-                                   uint32_t mods_latched,
-                                   uint32_t mods_locked,
-                                   uint32_t group) override final;
+    virtual void OnTouchUp(wl_touch * touch,
+                           uint32_t serial,
+                           uint32_t time,
+                           int32_t id) override final;
 
-    virtual void KeyboardRepeatInfo(wl_keyboard * keyboard,
-                                    int32_t rate,
-                                    int32_t delay) override final;
+    virtual void OnTouchMotion(wl_touch * touch,
+                               uint32_t time,
+                               int32_t id,
+                               wl_fixed_t x,
+                               wl_fixed_t y) override final;
+
+    virtual void OnTouchFrame(wl_touch * touch) override final;
+
+    virtual void OnTouchCancel(wl_touch * touch) override final;
+
+    virtual void OnSeatHandleCapabilities(wl_seat * seat,
+                                          uint32_t caps) override final;
+
+    virtual void OnSeatName(wl_seat * seat, const char * name) override final;
+
+    virtual void OnXDGShellPing(zxdg_shell_v6 *shell,
+                                uint32_t serial) override final;
+
+    virtual void OnXDGSurfaceConfigure(zxdg_surface_v6 * surface, uint32_t serial) override final;
+
+    virtual void OnXDGTopLevelConfigure(zxdg_toplevel_v6 * toplevel,
+                                        int32_t width,
+                                        int32_t height,
+                                        wl_array * states) override final;
+
+    virtual void OnXDGTopLevelClose(zxdg_toplevel_v6 * toplevel) override final;
+
+    virtual void OnIVISurfaceConfigure(ivi_surface * surface, int32_t width, int32_t height) override final;
 
     window _window;
-    display _display;
 
-//    Display * _display;
-//    Compositor * _compositor;
-//    wl_shm * _shm;
-//    wl_shell * _shell;
-//    Seat * _seat;
-//    Pointer * _pointer;
-//    Keyboard * _keyboard;
-//    KeyboardCallbackFunction _keyboardCallback;
-//    KeyCode _keyFilter;
+    Display * _display;
+    Compositor * _compositor;
+    wl_shm * _shm;
+    ZXDGShellV6 * _shell;
+    Seat * _seat;
+    Pointer * _pointer;
+    Keyboard * _keyboard;
+    Touch * _touch;
+    wl_cursor_theme * _cursorTheme;
+    wl_cursor * _defaultCursor;
+    wl_surface * _cursorSurface;
+    ivi_application * _iviApplication;
+    struct
+    {
+        EGLDisplay dpy;
+        EGLContext ctx;
+        EGLConfig conf;
+    } _egl;
+    PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC _swapBuffersWithDamage;
     bool _isRunning;
 };
 

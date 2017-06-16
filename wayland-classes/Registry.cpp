@@ -15,7 +15,7 @@ static void RegistryGlobalAdd(void * data,
             data, registry, name, interface, version);
 #endif
     IRegistryListener * listener = reinterpret_cast<IRegistryListener *>(data);
-    listener->RegistryCallbackAdd(registry, name, interface, version);
+    listener->OnRegistryAdd(registry, name, interface, version);
 }
 
 static void RegistryGlobalRemove(void * data, wl_registry * registry, uint32_t name)
@@ -25,7 +25,7 @@ static void RegistryGlobalRemove(void * data, wl_registry * registry, uint32_t n
             data, registry, name);
 #endif
     IRegistryListener * listener = reinterpret_cast<IRegistryListener *>(data);
-    listener->RegistryCallbackRemove(registry, name);
+    listener->OnRegistryRemove(registry, name);
 }
 
 static const wl_registry_listener RegistryListener = {
@@ -43,9 +43,9 @@ Registry::~Registry()
     Cleanup();
 }
 
-void Registry::AddListener(IRegistryListener * registryListener)
+void Registry::AddListener(IRegistryListener * listener)
 {
-    wl_registry_add_listener(_registry, &RegistryListener, registryListener);
+    wl_registry_add_listener(_registry, &RegistryListener, listener);
 }
 
 void Registry::Cleanup()

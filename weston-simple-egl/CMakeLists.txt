@@ -51,10 +51,24 @@ set(WESTON_SIMPL_EGL_DEFINES
 set(WESTON_SIMPL_EGL_SOURCE_FILES
     main.cpp
     Application.cpp
+    SignalHandler.cpp
+    ZXDGShellV6.cpp
+    ZXDGSurfaceV6.cpp
+    ZXDGTopLevelV6.cpp
+    IVISurface.cpp
     protocol/xdg-shell-unstable-v6-protocol.c
     protocol/ivi-application-protocol.c)
 set(WESTON_SIMPL_EGL_HEADER_FILES
     Application.h
+    SignalHandler.h
+    ZXDGShellV6.h
+    ZXDGSurfaceV6.h
+    ZXDGTopLevelV6.h
+    IVISurface.h
+    IZXDGShellV6Listener.h
+    IZXDGSurfaceV6Listener.h
+    IZXDGTopLevelV6Listener.h
+    IIVISurfaceListener.h
     protocol/xdg-shell-unstable-v6-client-protocol.h
     protocol/ivi-application-client-protocol.h)
 add_executable(${PROJECT_NAME} ${WESTON_SIMPL_EGL_SOURCE_FILES} ${WESTON_SIMPL_EGL_HEADER_FILES})

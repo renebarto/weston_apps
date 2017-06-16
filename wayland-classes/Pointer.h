@@ -18,7 +18,7 @@ public:
     ~Pointer();
 
     wl_pointer * Get() { return _pointer; }
-    void AddListener(IPointerListener * pointerListener);
+    void AddListener(IPointerListener * listener);
     void RemoveListener() { AddListener(nullptr); }
     bool SetFromPool(Compositor * compositor, ShmPool & pool,
                      unsigned width, unsigned height,

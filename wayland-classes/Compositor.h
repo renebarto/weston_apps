@@ -12,6 +12,7 @@ public:
     ~Compositor();
 
     wl_compositor * Get() { return _compositor; }
+    void Cleanup();
 
 private:
     wl_compositor * _compositor;
