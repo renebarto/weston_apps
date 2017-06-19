@@ -6,17 +6,21 @@ set(WAYLAND_CLASSES_SOURCE_FILES
     Compositor.cpp
     Registry.cpp
     Display.cpp
+    Shm.cpp
     ShmPool.cpp
     Surface.cpp
     Buffer.cpp
     Pointer.cpp
     Keyboard.cpp
     Touch.cpp
-    Seat.cpp)
+    Seat.cpp
+    Region.cpp
+    Callback.cpp)
 set(WAYLAND_CLASSES_HEADER_FILES
     Compositor.h
     Registry.h
     Display.h
+    Shm.h
     ShmPool.h
     Surface.h
     Buffer.h
@@ -24,6 +28,8 @@ set(WAYLAND_CLASSES_HEADER_FILES
     Keyboard.h
     Touch.h
     Seat.h
+    Region.h
+    Callback.h
     IRegistryListener.h
     IPointerListener.h
     IKeyboardListener.h

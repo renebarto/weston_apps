@@ -1,22 +1,30 @@
 #pragma once
 
-#include <wayland-client.h>
-#include "Compositor.h"
+#include <cstdint>
+
+struct wl_surface;
+struct wl_shell_surface;
+struct wl_shell;
+struct wl_buffer;
 
 namespace Wayland
 {
 
+class Compositor;
+class Region;
+
 class Surface
 {
 public:
-    Surface();
+    Surface(wl_surface * surface);
     ~Surface();
     wl_surface * Get() const { return _surface; }
-    bool Create(Compositor * compositor);
     void Destroy();
     void SetUserData(void (*callback)(uint32_t));
     void Attach(wl_buffer * buffer);
     void Commit();
+    void SetOpaqueRegion(Region * region);
+    void SetTransparent();
 
 private:
     wl_surface * _surface;

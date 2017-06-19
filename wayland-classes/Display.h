@@ -17,6 +17,7 @@ public:
     void Roundtrip();
     void Cleanup();
     bool Dispatch();
+    bool DispatchPending();
 
     wl_display * Get() const { return _display; }
 

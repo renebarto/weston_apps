@@ -1,6 +1,7 @@
 #include "Pointer.h"
 
 #include <cstdio>
+#include "Compositor.h"
 #include "ShmPool.h"
 #include "Surface.h"
 #include "Buffer.h"
@@ -37,7 +38,7 @@ static void PointerMotion(void * data,
                           wl_pointer * pointer, uint32_t time,
                           wl_fixed_t surfaceX, wl_fixed_t surfaceY)
 {
-#ifdef WAYLAND_CLASSES_DEBUG
+#if defined(WAYLAND_CLASSES_DEBUG) && defined(WAYLAND_POINTER_DEBUG)
     fprintf(stderr, "## pointer_motion(data %p, pointer %p, time %u, X %d, Y %d)\n",
             data, pointer, time, surfaceX, surfaceY);
 #endif
@@ -104,8 +105,8 @@ bool Pointer::SetFromPool(Compositor * compositor, ShmPool & pool,
                           unsigned width, unsigned height,
                           int32_t hotspotX, int32_t hotspotY)
 {
-    _surface = new Surface;
-    if (!_surface->Create(compositor))
+    _surface = compositor->CreateSurface();
+    if (!_surface)
     {
         Reset();
         return false;

@@ -42,3 +42,8 @@ bool Display::Dispatch()
 {
     return (wl_display_dispatch(_display) >= 0);
 }
+
+bool Display::DispatchPending()
+{
+    return (wl_display_dispatch_pending(_display) >= 0);
+}

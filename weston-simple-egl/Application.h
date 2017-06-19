@@ -7,7 +7,6 @@
 #include <wayland-cursor.h>
 #include <GLES2/gl2.h>
 #include <EGL/egl.h>
-#include <EGL/eglext.h>
 #include "protocol/xdg-shell-unstable-v6-client-protocol.h"
 #include "protocol/ivi-application-client-protocol.h"
 #include "IRegistryListener.h"
@@ -37,36 +36,13 @@ class ZXDGShellV6;
 class ZXDGSurfaceV6;
 class ZXDGTopLevelV6;
 class IVISurface;
+class Callback;
+class Shm;
+class EGLWindow;
 
-using KeyCode = int;
-using KeyboardCallbackFunction = void (*)();
-
-struct geometry
+struct Geometry
 {
     int width, height;
-};
-
-struct window
-{
-    Display *display;
-    struct geometry geometry, window_size;
-    struct
-    {
-        GLuint rotation_uniform;
-        GLuint pos;
-        GLuint col;
-    } gl;
-
-    uint32_t benchmark_time, frames;
-    struct wl_egl_window *native;
-    struct wl_surface *surface;
-    ZXDGSurfaceV6 * xdg_surface;
-    ZXDGTopLevelV6 * xdg_toplevel;
-    IVISurface * ivi_surface;
-    EGLSurface egl_surface;
-    struct wl_callback *callback;
-    int fullscreen, opaque, buffer_size, frame_sync;
-    bool wait_for_configure;
 };
 
 struct Settings
@@ -106,23 +82,16 @@ public:
     bool Dispatch();
     bool IsRunning() { return _isRunning; }
 
-//    Compositor * GetCompositor() { return _compositor; }
-//    wl_shm * GetShm() { return _shm; }
-//    wl_shell * GetShell() { return _shell; }
-//    const Seat * GetSeat() const { return _seat; }
-//    Pointer * GetPointer() { return _pointer; }
-//    const Keyboard * GetKeyboard() const { return _keyboard; }
-
 private:
-    void InitEGL(struct window * window);
+    void InitEGL();
     void FiniEGL();
-    GLuint CreateShader(struct window * window, const char * source, GLenum shader_type);
-    void InitGL(struct window * window);
-    void CreateXDGSurface(struct window * window);
-    void CreateIVISurface(struct window * window);
-    void CreateSurface(struct window * window);
-    void DestroySurface(struct window * window);
-    void Redraw(void * data, struct wl_callback * callback, uint32_t time);
+    GLuint CreateShader(const char * source, GLenum shader_type);
+    void InitGL();
+    void CreateXDGSurface();
+    void CreateIVISurface();
+    void CreateSurface();
+    void DestroySurface();
+    void Redraw(uint32_t time);
 
     virtual void OnRegistryAdd(wl_registry *wl_registry,
                                uint32_t name,
@@ -220,11 +189,9 @@ private:
 
     virtual void OnIVISurfaceConfigure(ivi_surface * surface, int32_t width, int32_t height) override final;
 
-    window _window;
-
     Display * _display;
     Compositor * _compositor;
-    wl_shm * _shm;
+    Shm * _shm;
     ZXDGShellV6 * _shell;
     Seat * _seat;
     Pointer * _pointer;
@@ -232,16 +199,30 @@ private:
     Touch * _touch;
     wl_cursor_theme * _cursorTheme;
     wl_cursor * _defaultCursor;
-    wl_surface * _cursorSurface;
+    Surface * _cursorSurface;
     ivi_application * _iviApplication;
+    EGLWindow * _eglWindow;
+    bool _isRunning;
+    Geometry _geometry;
+    Geometry _windowSize;
     struct
     {
-        EGLDisplay dpy;
-        EGLContext ctx;
-        EGLConfig conf;
-    } _egl;
-    PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC _swapBuffersWithDamage;
-    bool _isRunning;
+        GLuint rotationUniform;
+        GLuint pos;
+        GLuint col;
+    } _gl;
+
+    uint32_t _benchmarkTime;
+    uint32_t _numFrames;
+    Surface * _surface;
+    ZXDGSurfaceV6 * _xdgSurface;
+    ZXDGTopLevelV6 * _xdgTopLevel;
+    IVISurface * _iviSurface;
+    bool _fullScreen;
+    bool _opaque;
+    int _bufferSize;
+    bool _frameSync;
+    bool _waitForConfigure;
 };
 
 } // namespace Wayland

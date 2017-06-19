@@ -6,17 +6,21 @@
 #include <cassert>
 #include <iostream>
 #include <linux/input.h>
+#include "Compositor.h"
 #include "Display.h"
 #include "Keyboard.h"
 #include "Pointer.h"
+#include "Region.h"
 #include "Registry.h"
 #include "Seat.h"
+#include "Shm.h"
 #include "Surface.h"
 #include "Touch.h"
 #include "ZXDGShellV6.h"
 #include "ZXDGSurfaceV6.h"
 #include "ZXDGTopLevelV6.h"
 #include "IVISurface.h"
+#include "EGLWindow.h"
 #include "shared/helpers.h"
 #include "shared/platform.h"
 #include "shared/weston-egl-ext.h"
@@ -46,8 +50,7 @@ static const char *frag_shader_text =
         "}\n";
 
 Application::Application()
-    : _window()
-    , _display()
+    : _display()
     , _compositor()
     , _shm()
     , _shell()
@@ -59,9 +62,22 @@ Application::Application()
     , _defaultCursor()
     , _cursorSurface()
     , _iviApplication()
-    , _egl()
-    , _swapBuffersWithDamage()
+    , _eglWindow()
     , _isRunning()
+    , _geometry()
+    , _windowSize()
+    , _gl()
+    , _benchmarkTime()
+    , _numFrames()
+    , _surface()
+    , _xdgSurface()
+    , _xdgTopLevel()
+    , _iviSurface()
+    , _fullScreen()
+    , _opaque()
+    , _bufferSize()
+    , _frameSync()
+    , _waitForConfigure()
 {
 }
 
@@ -72,14 +88,13 @@ Application::~Application()
 
 bool Application::Setup(const Settings & settings)
 {
-    _window.display = _display;
-    _window.geometry.width  = 250;
-    _window.geometry.height = 250;
-    _window.window_size = _window.geometry;
-    _window.fullscreen = settings.fullScreen;
-    _window.opaque = settings.opaque;
-    _window.buffer_size = settings.bufferSize;
-    _window.frame_sync = settings.frameSync;
+    _geometry.width  = 250;
+    _geometry.height = 250;
+    _windowSize = _geometry;
+    _fullScreen = settings.fullScreen;
+    _opaque = settings.opaque;
+    _bufferSize = settings.bufferSize;
+    _frameSync = settings.frameSync;
 
     _display = new Display;
     if (!_display->Setup(nullptr))
@@ -91,11 +106,11 @@ bool Application::Setup(const Settings & settings)
     registry.AddListener(this);
     _display->Roundtrip();
 
-    InitEGL(&_window);
-    CreateSurface(&_window);
-    InitGL(&_window);
+    InitEGL();
+    CreateSurface();
+    InitGL();
 
-    _cursorSurface = wl_compositor_create_surface(_compositor->Get());
+    _cursorSurface = _compositor->CreateSurface();
 
     g_isRunning = true;
     return true;
@@ -103,11 +118,10 @@ bool Application::Setup(const Settings & settings)
 
 void Application::Cleanup()
 {
-    DestroySurface(&_window);
+    DestroySurface();
     FiniEGL();
 
-    if (_cursorSurface)
-        wl_surface_destroy(_cursorSurface);
+    delete _cursorSurface;
     _cursorSurface = nullptr;
     if (_cursorTheme)
         wl_cursor_theme_destroy(_cursorTheme);
@@ -130,8 +144,7 @@ void Application::Cleanup()
     _touch = nullptr;
     delete _seat;
     _seat = nullptr;
-    if (_shm)
-        wl_shm_destroy(_shm);
+    delete _shm;
     _shm = nullptr;
     delete _display;
     _display = nullptr;
@@ -145,18 +158,17 @@ bool Application::Dispatch()
      * queued up as a side effect. */
     if (!g_isRunning)
         _isRunning = false;
-    if (_window.wait_for_configure)
+    if (_waitForConfigure)
     {
-        if (wl_display_dispatch(_display->Get()) < 0)
+        if (!_display->Dispatch())
             return false;
     } else
     {
-        if (wl_display_dispatch_pending(_display->Get()) < 0)
+        if (!_display->DispatchPending())
             return false;
-        Redraw(&_window, NULL, 0);
+        Redraw(0);
     }
     return true;
-//    return _display ? _display->Dispatch() : false;
 }
 
 void Application::OnRegistryAdd(wl_registry *registry, uint32_t name,
@@ -174,8 +186,8 @@ void Application::OnRegistryAdd(wl_registry *registry, uint32_t name,
         _seat->AddListener(this);
     } else if (strcmp(interface, wl_shm_interface.name) == 0)
     {
-        _shm = reinterpret_cast<struct wl_shm *>(wl_registry_bind(registry, name, &wl_shm_interface, 1));
-        _cursorTheme = wl_cursor_theme_load(nullptr, 32, _shm);
+        _shm = new Shm(reinterpret_cast<struct wl_shm *>(wl_registry_bind(registry, name, &wl_shm_interface, 1)));
+        _cursorTheme = wl_cursor_theme_load(nullptr, 32, _shm->Get());
         if (!_cursorTheme)
         {
             cerr << "unable to load default theme" << endl;
@@ -204,7 +216,7 @@ void Application::OnPointerEnter(wl_pointer *pointer,
 {
     assert(pointer == _pointer->Get());
 
-    if (_window.fullscreen)
+    if (_fullScreen)
     {
         // Hide cursor
         wl_pointer_set_cursor(pointer, serial, nullptr, 0, 0);
@@ -216,16 +228,13 @@ void Application::OnPointerEnter(wl_pointer *pointer,
         if (!buffer)
             return;
         wl_pointer_set_cursor(pointer, serial,
-                              _cursorSurface,
+                              _cursorSurface->Get(),
                               image->hotspot_x,
                               image->hotspot_y);
-        wl_surface_attach(_cursorSurface, buffer, 0, 0);
-        wl_surface_damage(_cursorSurface, 0, 0, image->width, image->height);
-        wl_surface_commit(_cursorSurface);
+        _cursorSurface->Attach(buffer);
+        wl_surface_damage(_cursorSurface->Get(), 0, 0, image->width, image->height);
+        _cursorSurface->Commit();
     }
-//    _pointer->SetTargetSurface(surface);
-//    _pointer->AttachBufferToSurface();
-//    _pointer->SetCursor(serial);
 }
 
 void Application::OnPointerLeave(wl_pointer *pointer, uint32_t serial,
@@ -245,11 +254,11 @@ void Application::OnPointerButton(wl_pointer *pointer, uint32_t serial,
 {
     assert(pointer == _pointer->Get());
 
-    if (!_window.xdg_toplevel)
+    if (!_xdgTopLevel)
         return;
 
     if (button == BTN_LEFT && state == WL_POINTER_BUTTON_STATE_PRESSED)
-        zxdg_toplevel_v6_move(_window.xdg_toplevel->Get(),
+        zxdg_toplevel_v6_move(_xdgTopLevel->Get(),
                               _seat->Get(), serial);
 }
 
@@ -295,10 +304,10 @@ void Application::OnKeyboardKey(wl_keyboard *keyboard,
 
     if (key == KEY_F11 && state)
     {
-        if (_window.fullscreen)
-            _window.xdg_toplevel->UnsetFullScreen();
+        if (_fullScreen)
+            _xdgTopLevel->UnsetFullScreen();
         else
-            _window.xdg_toplevel->SetFullScreen();
+            _xdgTopLevel->SetFullScreen();
     } else if (key == KEY_ESC && state)
         Stop();
 }
@@ -333,7 +342,7 @@ void Application::OnTouchDown(wl_touch * touch,
     if (!_shell)
         return;
 
-    _window.xdg_toplevel->Move(_seat, serial);
+    _xdgTopLevel->Move(_seat, serial);
 }
 
 void Application::OnTouchUp(wl_touch * touch,
@@ -414,7 +423,7 @@ void Application::OnXDGSurfaceConfigure(zxdg_surface_v6 * surface, uint32_t seri
 {
     zxdg_surface_v6_ack_configure(surface, serial);
 
-    _window.wait_for_configure = false;
+    _waitForConfigure = false;
 }
 
 void Application::OnXDGTopLevelConfigure(zxdg_toplevel_v6 * toplevel,
@@ -424,7 +433,7 @@ void Application::OnXDGTopLevelConfigure(zxdg_toplevel_v6 * toplevel,
 {
     uint32_t *p;
 
-    _window.fullscreen = false;
+    _fullScreen = false;
     for (p = reinterpret_cast<uint32_t *>(states->data);
          (const char *) p < (reinterpret_cast<const char *>(states->data) + states->size);
          p++)
@@ -433,28 +442,27 @@ void Application::OnXDGTopLevelConfigure(zxdg_toplevel_v6 * toplevel,
         switch (state)
         {
             case ZXDG_TOPLEVEL_V6_STATE_FULLSCREEN:
-                _window.fullscreen = true;
+                _fullScreen = true;
                 break;
         }
     }
 
     if ((width > 0) && (height > 0))
     {
-        if (!_window.fullscreen)
+        if (!_fullScreen)
         {
-            _window.window_size.width = width;
-            _window.window_size.height = height;
+            _windowSize.width = width;
+            _windowSize.height = height;
         }
-        _window.geometry.width = width;
-        _window.geometry.height = height;
-    } else if (!_window.fullscreen)
+        _geometry.width = width;
+        _geometry.height = height;
+    } else if (!_fullScreen)
     {
-        _window.geometry = _window.window_size;
+        _geometry = _windowSize;
     }
 
-    if (_window.native)
-        wl_egl_window_resize(_window.native,
-                             _window.geometry.width, _window.geometry.height, 0, 0);
+    if (_eglWindow)
+        _eglWindow->Resize(_geometry.width, _geometry.height);
 }
 
 void Application::OnXDGTopLevelClose(zxdg_toplevel_v6 * toplevel)
@@ -464,37 +472,28 @@ void Application::OnXDGTopLevelClose(zxdg_toplevel_v6 * toplevel)
 
 void Application::OnIVISurfaceConfigure(ivi_surface * surface, int32_t width, int32_t height)
 {
-    wl_egl_window_resize(_window.native, width, height, 0, 0);
+    if (_eglWindow)
+        _eglWindow->Resize(width, height);
 
-    _window.geometry.width = width;
-    _window.geometry.height = height;
+    _geometry.width = width;
+    _geometry.height = height;
 
-    if (!_window.fullscreen)
-        _window.window_size = _window.geometry;
+    if (!_fullScreen)
+        _windowSize = _geometry;
 }
 
-void Application::InitEGL(struct window * window)
+void Application::InitEGL()
 {
-    static const struct {
-        const char *extension, *entrypoint;
-    } swap_damage_ext_to_entrypoint[] = {
-        {
-            .extension = "EGL_EXT_swap_buffers_with_damage",
-            .entrypoint = "eglSwapBuffersWithDamageEXT",
-        },
-        {
-            .extension = "EGL_KHR_swap_buffers_with_damage",
-            .entrypoint = "eglSwapBuffersWithDamageKHR",
-        },
-    };
+    _eglWindow = new EGLWindow;
 
-    static const EGLint context_attribs[] = {
+    static const EGLint contextAttribs[] =
+    {
         EGL_CONTEXT_CLIENT_VERSION, 2,
         EGL_NONE
     };
-    const char *extensions;
 
-    EGLint config_attribs[] = {
+    EGLint configAttribs[] =
+    {
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
         EGL_RED_SIZE, 1,
         EGL_GREEN_SIZE, 1,
@@ -504,84 +503,25 @@ void Application::InitEGL(struct window * window)
         EGL_NONE
     };
 
-    EGLint major, minor, n, count, i, size;
-    EGLConfig *configs;
-    EGLBoolean ret;
+    if (_opaque || _bufferSize == 16)
+        // Aaarrgh, this means set ALPHA_SIZE to 0
+        configAttribs[9] = 0;
 
-    if (window->opaque || window->buffer_size == 16)
-        config_attribs[9] = 0;
-
-    _egl.dpy =
-        weston_platform_get_egl_display(EGL_PLATFORM_WAYLAND_KHR,
-                                        _display->Get(), nullptr);
-    assert(_egl.dpy);
-
-    ret = eglInitialize(_egl.dpy, &major, &minor);
-    assert(ret == EGL_TRUE);
-    ret = eglBindAPI(EGL_OPENGL_ES_API);
-    assert(ret == EGL_TRUE);
-
-    if (!eglGetConfigs(_egl.dpy, NULL, 0, &count) || count < 1)
-        assert(0);
-
-    configs = reinterpret_cast<void **>(calloc(count, sizeof *configs));
-    assert(configs);
-
-    ret = eglChooseConfig(_egl.dpy, config_attribs,
-                          configs, count, &n);
-    assert(ret && n >= 1);
-
-    for (i = 0; i < n; i++) {
-        eglGetConfigAttrib(_egl.dpy,
-                           configs[i], EGL_BUFFER_SIZE, &size);
-        if (window->buffer_size == size) {
-            _egl.conf = configs[i];
-            break;
-        }
-    }
-    free(configs);
-    if (_egl.conf == NULL) {
-        fprintf(stderr, "did not find config with buffer size %d\n",
-                window->buffer_size);
+    if (!_eglWindow->Initialize(weston_platform_get_egl_display(EGL_PLATFORM_WAYLAND_KHR, _display->Get(), nullptr),
+                                configAttribs, contextAttribs, _bufferSize))
         exit(EXIT_FAILURE);
-    }
 
-    _egl.ctx = eglCreateContext(_egl.dpy,
-                                        _egl.conf,
-                                        EGL_NO_CONTEXT, context_attribs);
-    assert(_egl.ctx);
-
-    _swapBuffersWithDamage = NULL;
-    extensions = eglQueryString(_egl.dpy, EGL_EXTENSIONS);
-    if (extensions &&
-        weston_check_egl_extension(extensions, "EGL_EXT_buffer_age"))
-    {
-        for (i = 0; i < (int) ARRAY_LENGTH(swap_damage_ext_to_entrypoint); i++)
-        {
-            if (weston_check_egl_extension(extensions,
-                                           swap_damage_ext_to_entrypoint[i].extension))
-            {
-                /* The EXTPROC is identical to the KHR one */
-                _swapBuffersWithDamage =
-                    (PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC)
-                        eglGetProcAddress(swap_damage_ext_to_entrypoint[i].entrypoint);
-                break;
-            }
-        }
-    }
-
-    if (_swapBuffersWithDamage)
-        printf("has EGL_EXT_buffer_age and %s\n", swap_damage_ext_to_entrypoint[i].extension);
-
+    if (_eglWindow->DetermineSwapBuffersExtension())
+        cout << "has EGL_EXT_buffer_age and " << _eglWindow->GetSwapBuffersWithDamageExtension() << endl;
 }
 
 void Application::FiniEGL()
 {
-    eglTerminate(_egl.dpy);
-    eglReleaseThread();
+    delete _eglWindow;
+    _eglWindow = nullptr;
 }
 
-GLuint Application::CreateShader(struct window * window, const char * source, GLenum shader_type)
+GLuint Application::CreateShader(const char * source, GLenum shader_type)
 {
     GLuint shader;
     GLint status;
@@ -606,14 +546,14 @@ GLuint Application::CreateShader(struct window * window, const char * source, GL
     return shader;
 }
 
-void Application::InitGL(struct window * window)
+void Application::InitGL()
 {
     GLuint frag, vert;
     GLuint program;
     GLint status;
 
-    frag = CreateShader(window, frag_shader_text, GL_FRAGMENT_SHADER);
-    vert = CreateShader(window, vert_shader_text, GL_VERTEX_SHADER);
+    frag = CreateShader(frag_shader_text, GL_FRAGMENT_SHADER);
+    vert = CreateShader(vert_shader_text, GL_VERTEX_SHADER);
 
     program = glCreateProgram();
     glAttachShader(program, frag);
@@ -631,120 +571,95 @@ void Application::InitGL(struct window * window)
 
     glUseProgram(program);
 
-    window->gl.pos = 0;
-    window->gl.col = 1;
+    _gl.pos = 0;
+    _gl.col = 1;
 
-    glBindAttribLocation(program, window->gl.pos, "pos");
-    glBindAttribLocation(program, window->gl.col, "color");
+    glBindAttribLocation(program, _gl.pos, "pos");
+    glBindAttribLocation(program, _gl.col, "color");
     glLinkProgram(program);
 
-    window->gl.rotation_uniform =
+    _gl.rotationUniform =
         glGetUniformLocation(program, "rotation");
 }
 
-void Application::CreateXDGSurface(struct window * window)
+void Application::CreateXDGSurface()
 {
-    window->xdg_surface = new ZXDGSurfaceV6(zxdg_shell_v6_get_xdg_surface(_shell->Get(), window->surface));
-    window->xdg_surface->AddListener(this);
+    _xdgSurface = new ZXDGSurfaceV6(zxdg_shell_v6_get_xdg_surface(_shell->Get(), _surface->Get()));
+    _xdgSurface->AddListener(this);
 
-    window->xdg_toplevel = new ZXDGTopLevelV6(zxdg_surface_v6_get_toplevel(window->xdg_surface->Get()));
-    window->xdg_toplevel->AddListener(this);
-    window->xdg_toplevel->SetTitle("simple-egl");
+    _xdgTopLevel = new ZXDGTopLevelV6(zxdg_surface_v6_get_toplevel(_xdgSurface->Get()));
+    _xdgTopLevel->AddListener(this);
+    _xdgTopLevel->SetTitle("simple-egl");
 
-    window->wait_for_configure = true;
-    wl_surface_commit(window->surface);
+    _waitForConfigure = true;
+    _surface->Commit();
 }
 
-void Application::CreateIVISurface(struct window * window)
+void Application::CreateIVISurface()
 {
     uint32_t id_ivisurf = IVI_SURFACE_ID + (uint32_t)getpid();
-    window->ivi_surface = new IVISurface(ivi_application_surface_create(_iviApplication,
-                                                                        id_ivisurf, window->surface));
+    _iviSurface = new IVISurface(ivi_application_surface_create(_iviApplication,
+                                                                        id_ivisurf, _surface->Get()));
 
-    if (window->ivi_surface == nullptr)
+    if (_iviSurface == nullptr)
     {
         fprintf(stderr, "Failed to create ivi_client_surface\n");
         abort();
     }
 
-    window->ivi_surface->AddListener(this);
+    _iviSurface->AddListener(this);
 }
 
-void Application::CreateSurface(struct window * window)
+void Application::CreateSurface()
 {
     EGLBoolean ret;
 
-    window->surface = wl_compositor_create_surface(_compositor->Get());
+    _surface = _compositor->CreateSurface();
 
-    window->native =
-        wl_egl_window_create(window->surface,
-                             window->geometry.width,
-                             window->geometry.height);
-    window->egl_surface =
-        weston_platform_create_egl_surface(_egl.dpy,
-                                           _egl.conf,
-                                           window->native, NULL);
-
+    _eglWindow->Create(_surface->Get(),
+                       _geometry.width,
+                       _geometry.height);
 
     if (_shell)
     {
-        CreateXDGSurface(window);
+        CreateXDGSurface();
     } else if (_iviApplication)
     {
-        CreateIVISurface(window);
+        CreateIVISurface();
     } else {
         assert(0);
     }
 
-    ret = eglMakeCurrent(_egl.dpy, window->egl_surface,
-                         window->egl_surface, _egl.ctx);
-    assert(ret == EGL_TRUE);
-
-    if (!window->frame_sync)
-        eglSwapInterval(_egl.dpy, 0);
+    _eglWindow->CreateSurface();
+    if (!_frameSync)
+        _eglWindow->SetSwapInterval(0);
 
     if (!_shell)
         return;
 
-    if (window->fullscreen)
-        window->xdg_toplevel->SetFullScreen();
+    if (_fullScreen)
+        _xdgTopLevel->SetFullScreen();
 }
 
-void Application::DestroySurface(struct window * window)
+void Application::DestroySurface()
 {
-    if (window->egl_surface)
+    if (_eglWindow)
     {
-        /* Required, otherwise segfault in egl_dri2.c: dri2_make_current()
-         * on eglReleaseThread(). */
-        eglMakeCurrent(_egl.dpy, EGL_NO_SURFACE, EGL_NO_SURFACE,
-                       EGL_NO_CONTEXT);
-
-        weston_platform_destroy_egl_surface(_egl.dpy,
-                                            window->egl_surface);
+        _eglWindow->DestroySurface();
+        _eglWindow->DestroyWindow();
     }
-    window->egl_surface = nullptr;
-    if (window->native)
-        wl_egl_window_destroy(window->native);
-    window->native = nullptr;
-
-    delete window->xdg_toplevel;
-    window->xdg_toplevel = nullptr;
-    delete window->xdg_surface;
-    window->xdg_surface = nullptr;
-    delete window->ivi_surface;
-    _iviApplication = nullptr;
-    if (window->surface)
-        wl_surface_destroy(window->surface);
-    window->surface = nullptr;
-
-    if (window->callback)
-        wl_callback_destroy(window->callback);
-    window->callback = nullptr;
+    delete _xdgTopLevel;
+    _xdgTopLevel = nullptr;
+    delete _xdgSurface;
+    _xdgSurface = nullptr;
+    delete _iviSurface;
+    _iviSurface = nullptr;
+    delete _surface;
+    _surface = nullptr;
 }
 
-void Application::Redraw(void * data, struct wl_callback * callback, uint32_t time)
+void Application::Redraw(uint32_t time)
 {
-    struct window *window = reinterpret_cast<struct window *>(data);
     static const GLfloat verts[3][2] = {
         { -0.5, -0.5 },
         {  0.5, -0.5 },
@@ -764,27 +679,19 @@ void Application::Redraw(void * data, struct wl_callback * callback, uint32_t ti
     };
     static const uint32_t speed_div = 5, benchmark_interval = 5;
     struct wl_region *region;
-    EGLint rect[4];
-    EGLint buffer_age = 0;
     struct timeval tv;
 
-    assert(window->callback == callback);
-    window->callback = NULL;
-
-    if (callback)
-        wl_callback_destroy(callback);
-
-    gettimeofday(&tv, NULL);
+    gettimeofday(&tv, nullptr);
     time = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-    if (window->frames == 0)
-        window->benchmark_time = time;
-    if (time - window->benchmark_time > (benchmark_interval * 1000)) {
+    if (_numFrames == 0)
+        _benchmarkTime = time;
+    if (time - _benchmarkTime > (benchmark_interval * 1000)) {
         printf("%d frames in %d seconds: %f fps\n",
-               window->frames,
+               _numFrames,
                benchmark_interval,
-               (float) window->frames / benchmark_interval);
-        window->benchmark_time = time;
-        window->frames = 0;
+               (float) _numFrames / benchmark_interval);
+        _benchmarkTime = time;
+        _numFrames = 0;
     }
 
     angle = (time / speed_div) % 360 * M_PI / 180.0;
@@ -793,50 +700,37 @@ void Application::Redraw(void * data, struct wl_callback * callback, uint32_t ti
     rotation[2][0] = -sin(angle);
     rotation[2][2] =  cos(angle);
 
-    if (_swapBuffersWithDamage)
-        eglQuerySurface(_egl.dpy, window->egl_surface,
-                        EGL_BUFFER_AGE_EXT, &buffer_age);
+    glViewport(0, 0, _geometry.width, _geometry.height);
 
-    glViewport(0, 0, window->geometry.width, window->geometry.height);
-
-    glUniformMatrix4fv(window->gl.rotation_uniform, 1, GL_FALSE,
+    glUniformMatrix4fv(_gl.rotationUniform, 1, GL_FALSE,
                        (GLfloat *) rotation);
 
     glClearColor(0.0, 0.0, 0.0, 0.5);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glVertexAttribPointer(window->gl.pos, 2, GL_FLOAT, GL_FALSE, 0, verts);
-    glVertexAttribPointer(window->gl.col, 3, GL_FLOAT, GL_FALSE, 0, colors);
-    glEnableVertexAttribArray(window->gl.pos);
-    glEnableVertexAttribArray(window->gl.col);
+    glVertexAttribPointer(_gl.pos, 2, GL_FLOAT, GL_FALSE, 0, verts);
+    glVertexAttribPointer(_gl.col, 3, GL_FLOAT, GL_FALSE, 0, colors);
+    glEnableVertexAttribArray(_gl.pos);
+    glEnableVertexAttribArray(_gl.col);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    glDisableVertexAttribArray(window->gl.pos);
-    glDisableVertexAttribArray(window->gl.col);
+    glDisableVertexAttribArray(_gl.pos);
+    glDisableVertexAttribArray(_gl.col);
 
-    if (window->opaque || window->fullscreen) {
-        region = wl_compositor_create_region(_compositor->Get());
-        wl_region_add(region, 0, 0,
-                      window->geometry.width,
-                      window->geometry.height);
-        wl_surface_set_opaque_region(window->surface, region);
-        wl_region_destroy(region);
-    } else {
-        wl_surface_set_opaque_region(window->surface, NULL);
+    if (_opaque || _fullScreen)
+    {
+        Region * region = _compositor->CreateRegion();
+        region->Add(_geometry.width, _geometry.height);
+        _surface->SetOpaqueRegion(region);
+        delete region;
+    } else
+    {
+        _surface->SetTransparent();
     }
 
-    if (_swapBuffersWithDamage && buffer_age > 0) {
-        rect[0] = window->geometry.width / 4 - 1;
-        rect[1] = window->geometry.height / 4 - 1;
-        rect[2] = window->geometry.width / 2 + 2;
-        rect[3] = window->geometry.height / 2 + 2;
-        _swapBuffersWithDamage(_egl.dpy,
-                                          window->egl_surface,
-                                          rect, 1);
-    } else {
-        eglSwapBuffers(_egl.dpy, window->egl_surface);
-    }
-    window->frames++;
+    _eglWindow->SwapBuffers();
+
+    _numFrames++;
 }
 

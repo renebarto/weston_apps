@@ -1,5 +1,9 @@
 #include "Surface.h"
 
+#include <wayland-client.h>
+#include "Compositor.h"
+#include "Region.h"
+
 using namespace Wayland;
 
 static void ShellSurfacePing(void * data,
@@ -20,28 +24,24 @@ static const struct wl_shell_surface_listener shell_surface_listener = {
     .configure = ShellSurfaceConfigure,
 };
 
-Surface::Surface()
-    : _surface()
+Surface::Surface(wl_surface * surface)
+    : _surface(surface)
 {
 
 }
 
 Surface::~Surface()
 {
-    if (_surface != nullptr)
-        Destroy();
-}
-
-bool Surface::Create(Compositor * compositor)
-{
-    _surface = wl_compositor_create_surface(compositor->Get());
-    return true;
+    Destroy();
 }
 
 void Surface::Destroy()
 {
-    wl_surface_destroy(_surface);
-    _surface = nullptr;
+    if (_surface != nullptr)
+    {
+        wl_surface_destroy(_surface);
+        _surface = nullptr;
+    }
 }
 
 void Surface::SetUserData(void (*callback)(uint32_t))
@@ -59,6 +59,16 @@ void Surface::Commit()
     wl_surface_commit(_surface);
 }
 
+void Surface::SetOpaqueRegion(Region * region)
+{
+    wl_surface_set_opaque_region(_surface, region->Get());
+}
+
+void Surface::SetTransparent()
+{
+    wl_surface_set_opaque_region(_surface, nullptr);
+}
+
 ShellSurface::ShellSurface()
 {
 }
@@ -69,8 +79,8 @@ ShellSurface::~ShellSurface()
 
 bool ShellSurface::Create(Compositor * compositor, wl_shell * shell)
 {
-    Surface * surface = new Surface();
-    surface->Create(compositor);
+
+    Surface * surface = compositor->CreateSurface();
 
     _shellSurface = wl_shell_get_shell_surface(shell, surface->Get());
 
