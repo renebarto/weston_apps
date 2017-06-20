@@ -24,24 +24,6 @@
 #include <iostream>
 #include "Application.h"
 
-//#include <stdint.h>
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <string.h>
-//#include <stdbool.h>
-//#include <math.h>
-//#include <assert.h>
-
-//#include <wayland-client.h>
-//#include <wayland-egl.h>
-//#include <wayland-cursor.h>
-//
-//#include <GLES2/gl2.h>
-//#include <EGL/egl.h>
-//#include <EGL/eglext.h>
-//
-//#include "protocol/xdg-shell-unstable-v6-client-protocol.h"
-//#include "protocol/ivi-application-client-protocol.h"
 #include "SignalHandler.h"
 
 using namespace std;

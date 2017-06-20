@@ -42,28 +42,6 @@ extern "C" {
 #endif
 
 /**
- * Returns the smaller of two values.
- *
- * @param x the first item to compare.
- * @param y the second item to compare.
- * @return the value that evaluates to lesser than the other.
- */
-#ifndef MIN
-#define MIN(x,y) (((x) < (y)) ? (x) : (y))
-#endif
-
-/**
- * Returns the bigger of two values.
- *
- * @param x the first item to compare.
- * @param y the second item to compare.
- * @return the value that evaluates to more than the other.
- */
-#ifndef MAX
-#define MAX(x,y) (((x) > (y)) ? (x) : (y))
-#endif
-
-/**
  * Returns a pointer to the containing struct of a given member item.
  *
  * To demonstrate, the following example retrieves a pointer to

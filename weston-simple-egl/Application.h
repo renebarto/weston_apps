@@ -18,32 +18,30 @@
 #include "IZXDGSurfaceV6Listener.h"
 #include "IZXDGTopLevelV6Listener.h"
 #include "IIVISurfaceListener.h"
+#include "Geometry.h"
 
 namespace Wayland
 {
 
-class Display;
+class Callback;
 class Compositor;
-class Seat;
-class Pointer;
-class Keyboard;
-class Touch;
 class Cursor;
+class CursorTheme;
+class Display;
+class EGLWindow;
+class IVISurface;
+class Keyboard;
+class Pointer;
 class Registry;
+class Seat;
+class Shm;
+class Touch;
 class Surface;
 class Touch;
 class ZXDGShellV6;
 class ZXDGSurfaceV6;
 class ZXDGTopLevelV6;
-class IVISurface;
-class Callback;
-class Shm;
-class EGLWindow;
-
-struct Geometry
-{
-    int width, height;
-};
+class IVIApplication;
 
 struct Settings
 {
@@ -84,7 +82,7 @@ public:
 
 private:
     void InitEGL();
-    void FiniEGL();
+    void CleanupEGL();
     GLuint CreateShader(const char * source, GLenum shader_type);
     void InitGL();
     void CreateXDGSurface();
@@ -197,10 +195,10 @@ private:
     Pointer * _pointer;
     Keyboard * _keyboard;
     Touch * _touch;
-    wl_cursor_theme * _cursorTheme;
-    wl_cursor * _defaultCursor;
+    CursorTheme * _cursorTheme;
+    Cursor * _defaultCursor;
     Surface * _cursorSurface;
-    ivi_application * _iviApplication;
+    IVIApplication * _iviApplication;
     EGLWindow * _eglWindow;
     bool _isRunning;
     Geometry _geometry;

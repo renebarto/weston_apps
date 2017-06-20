@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <iostream>
+#include "Surface.h"
 
 using namespace std;
 using namespace Wayland;
@@ -16,8 +17,7 @@ EGLWindow::EGLWindow()
     , _swapBuffersWithDamageExtension()
     , _swapBuffersWithDamage()
     , _window()
-    , _width()
-    , _height()
+    , _size()
 {
 }
 
@@ -32,6 +32,7 @@ bool EGLWindow::Initialize(EGLDisplay display,
                            const EGLint * contextAttributes,
                            int bufferSize)
 {
+    cout << "Creating EGL window" << endl;
     _display = display;
     assert(_display);
 
@@ -71,6 +72,51 @@ bool EGLWindow::Initialize(EGLDisplay display,
         return false;
     }
 
+    cout << "Selected configuration" << endl;
+    EGLint value;
+    eglGetConfigAttrib(_display, _config, EGL_RED_SIZE, &value);
+    cout << "  RED_SIZE             : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_GREEN_SIZE, &value);
+    cout << "  GREEN_SIZE           : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_BLUE_SIZE, &value);
+    cout << "  BLUE_SIZE            : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_ALPHA_SIZE, &value);
+    cout << "  ALPHA_SIZE           : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_DEPTH_SIZE, &value);
+    cout << "  DEPTH_SIZE           : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_LUMINANCE_SIZE, &value);
+    cout << "  LUMINANCE_SIZE       : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_STENCIL_SIZE, &value);
+    cout << "  STENCIL_SIZE         : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_ALPHA_MASK_SIZE, &value);
+    cout << "  ALPHA_MASK_SIZE      : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_BUFFER_SIZE, &value);
+    cout << "  BUFFER_SIZE          : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_TRANSPARENT_RED_VALUE, &value);
+    cout << "  TRANSP_RED_VALUE     : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_TRANSPARENT_GREEN_VALUE, &value);
+    cout << "  TRANSP_GREEN_VALUE   : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_TRANSPARENT_BLUE_VALUE, &value);
+    cout << "  TRANSP_BLUE_VALUE    : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_BIND_TO_TEXTURE_RGB, &value);
+    cout << "  BIND_TO_TEXTURE_RGB  : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_BIND_TO_TEXTURE_RGBA, &value);
+    cout << "  BIND_TO_TEXTURE_RGBA : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_SAMPLES, &value);
+    cout << "  SAMPLES              : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_SAMPLE_BUFFERS, &value);
+    cout << "  SAMPLE_BUFFERS       : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_MIN_SWAP_INTERVAL, &value);
+    cout << "  MIN_SWAP_INTERVAL    : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_MAX_SWAP_INTERVAL, &value);
+    cout << "  MAX_SWAP_INTERVAL    : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_MAX_PBUFFER_WIDTH, &value);
+    cout << "  MAX_PBUFFER_WIDTH    : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_MAX_PBUFFER_HEIGHT, &value);
+    cout << "  MAX_PBUFFER_HEIGHT   : " << value << endl;
+    eglGetConfigAttrib(_display, _config, EGL_MAX_PBUFFER_PIXELS, &value);
+    cout << "  MAX_PBUFFER_PIXELS   : " << value << endl;
+
     _context = eglCreateContext(_display, _config, EGL_NO_CONTEXT, contextAttributes);
     assert(_context);
     return true;
@@ -78,6 +124,7 @@ bool EGLWindow::Initialize(EGLDisplay display,
 
 bool EGLWindow::DetermineSwapBuffersExtension()
 {
+    cout << "Determining SwapBuffers extension" << endl;
     static const struct
     {
         const char * extension, * entryPoint;
@@ -93,7 +140,7 @@ bool EGLWindow::DetermineSwapBuffersExtension()
         },
     };
 
-    _swapBuffersWithDamage = NULL;
+    _swapBuffersWithDamage = nullptr;
     const char * extensions = eglQueryString(_display, EGL_EXTENSIONS);
     EGLint i;
     if ((extensions != nullptr) &&
@@ -121,31 +168,32 @@ bool EGLWindow::DetermineSwapBuffersExtension()
     return false;
 }
 
-bool EGLWindow::Create(wl_surface * surface, int width, int height)
+bool EGLWindow::Create(Surface * surface, const Geometry & size)
 {
-    _window = wl_egl_window_create(surface, width, height);
-    _width = width;
-    _height = height;
+    cout << "Creating EGL window (" << size.width << "x" << size.height << ")" << endl;
+    _window = wl_egl_window_create(surface->Get(), size.width, size.height);
+    _size = size;
     return _window != nullptr;
 }
 
 void EGLWindow::DestroyWindow()
 {
+    cout << "Destroying EGL window" << endl;
     if (_window)
         wl_egl_window_destroy(_window);
     _window = nullptr;
 }
 
-void EGLWindow::Resize(int width, int height)
+void EGLWindow::Resize(const Geometry & size)
 {
-    wl_egl_window_resize(_window,
-                         width, height, 0, 0);
-    _width = width;
-    _height = height;
+    cout << "Resize EGL window (" << size.width << "x" << size.height << ")" << endl;
+    wl_egl_window_resize(_window, size.width, size.height, 0, 0);
+    _size = size;
 }
 
 EGLSurface EGLWindow::CreateSurface()
 {
+    cout << "Creating EGL surface" << endl;
     _surface = weston_platform_create_egl_surface(_display, _config, _window, nullptr);
     EGLint ret = eglMakeCurrent(_display, _surface, _surface, _context);
     assert(ret == EGL_TRUE);
@@ -153,6 +201,7 @@ EGLSurface EGLWindow::CreateSurface()
 
 void EGLWindow::DestroySurface()
 {
+    cout << "Destroying EGL surface" << endl;
     if (_surface)
     {
         /* Required, otherwise segfault in egl_dri2.c: dri2_make_current()
@@ -180,10 +229,10 @@ void EGLWindow::SwapBuffers()
     if (_swapBuffersWithDamage && (bufferAge > 0))
     {
         EGLint rect[4];
-        rect[0] = _width / 4 - 1;
-        rect[1] = _height / 4 - 1;
-        rect[2] = _width / 2 + 2;
-        rect[3] = _height / 2 + 2;
+        rect[0] = _size.width / 4 - 1;
+        rect[1] = _size.height / 4 - 1;
+        rect[2] = _size.width / 2 + 2;
+        rect[3] = _size.height / 2 + 2;
         _swapBuffersWithDamage(_display, _surface, rect, 1);
     }
     else

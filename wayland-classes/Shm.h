@@ -7,6 +7,8 @@ struct wl_shm;
 namespace Wayland
 {
 
+class CursorTheme;
+
 class Shm
 {
 public:
@@ -16,6 +18,8 @@ public:
 
     void Cleanup();
     wl_shm * Get() const { return _shm; }
+
+    CursorTheme * Load(const char *name, int size);
 
 private:
     wl_shm * _shm;

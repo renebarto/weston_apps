@@ -1,12 +1,11 @@
 #include "Application.h"
 
 #include <sys/time.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <cassert>
-#include <iostream>
 #include <linux/input.h>
 #include "Compositor.h"
+#include "Cursor.h"
 #include "Display.h"
 #include "Keyboard.h"
 #include "Pointer.h"
@@ -20,10 +19,9 @@
 #include "ZXDGSurfaceV6.h"
 #include "ZXDGTopLevelV6.h"
 #include "IVISurface.h"
+#include "IVIApplication.h"
 #include "EGLWindow.h"
-#include "shared/helpers.h"
 #include "shared/platform.h"
-#include "shared/weston-egl-ext.h"
 
 using namespace std;
 using namespace Wayland;
@@ -119,18 +117,16 @@ bool Application::Setup(const Settings & settings)
 void Application::Cleanup()
 {
     DestroySurface();
-    FiniEGL();
+    CleanupEGL();
 
     delete _cursorSurface;
     _cursorSurface = nullptr;
-    if (_cursorTheme)
-        wl_cursor_theme_destroy(_cursorTheme);
+    delete _cursorTheme;
     _cursorTheme = nullptr;
     delete _shell;
     _shell = nullptr;
 
-    if (_iviApplication)
-        ivi_application_destroy(_iviApplication);
+    delete _iviApplication;
     _iviApplication = nullptr;
 
     delete _compositor;
@@ -187,13 +183,14 @@ void Application::OnRegistryAdd(wl_registry *registry, uint32_t name,
     } else if (strcmp(interface, wl_shm_interface.name) == 0)
     {
         _shm = new Shm(reinterpret_cast<struct wl_shm *>(wl_registry_bind(registry, name, &wl_shm_interface, 1)));
-        _cursorTheme = wl_cursor_theme_load(nullptr, 32, _shm->Get());
+
+        _cursorTheme = _shm->Load(nullptr, 32);
         if (!_cursorTheme)
         {
             cerr << "unable to load default theme" << endl;
             return;
         }
-        _defaultCursor = wl_cursor_theme_get_cursor(_cursorTheme, "left_ptr");
+        _defaultCursor = _cursorTheme->GetCursor("left_ptr");
         if (!_defaultCursor)
         {
             cerr << "unable to load default left pointer" << endl;
@@ -201,7 +198,7 @@ void Application::OnRegistryAdd(wl_registry *registry, uint32_t name,
         }
     } else if (strcmp(interface, ivi_application_interface.name) == 0)
     {
-        _iviApplication = reinterpret_cast<struct ivi_application *>(wl_registry_bind(registry, name, &ivi_application_interface, 1));
+        _iviApplication = new IVIApplication(reinterpret_cast<struct ivi_application *>(wl_registry_bind(registry, name, &ivi_application_interface, 1)));
     }
 }
 
@@ -223,7 +220,7 @@ void Application::OnPointerEnter(wl_pointer *pointer,
     }
     else if (_defaultCursor)
     {
-        wl_cursor_image * image = _defaultCursor->images[0];
+        wl_cursor_image * image = _defaultCursor->GetImage(0);
         wl_buffer * buffer = wl_cursor_image_get_buffer(image);
         if (!buffer)
             return;
@@ -462,7 +459,7 @@ void Application::OnXDGTopLevelConfigure(zxdg_toplevel_v6 * toplevel,
     }
 
     if (_eglWindow)
-        _eglWindow->Resize(_geometry.width, _geometry.height);
+        _eglWindow->Resize(_geometry);
 }
 
 void Application::OnXDGTopLevelClose(zxdg_toplevel_v6 * toplevel)
@@ -473,7 +470,7 @@ void Application::OnXDGTopLevelClose(zxdg_toplevel_v6 * toplevel)
 void Application::OnIVISurfaceConfigure(ivi_surface * surface, int32_t width, int32_t height)
 {
     if (_eglWindow)
-        _eglWindow->Resize(width, height);
+        _eglWindow->Resize(Geometry(width, height));
 
     _geometry.width = width;
     _geometry.height = height;
@@ -515,7 +512,7 @@ void Application::InitEGL()
         cout << "has EGL_EXT_buffer_age and " << _eglWindow->GetSwapBuffersWithDamageExtension() << endl;
 }
 
-void Application::FiniEGL()
+void Application::CleanupEGL()
 {
     delete _eglWindow;
     _eglWindow = nullptr;
@@ -548,38 +545,39 @@ GLuint Application::CreateShader(const char * source, GLenum shader_type)
 
 void Application::InitGL()
 {
-    GLuint frag, vert;
-    GLuint program;
+    GLuint idFragShader;
+    GLuint idVertexShader;
+    GLuint idProgram;
     GLint status;
 
-    frag = CreateShader(frag_shader_text, GL_FRAGMENT_SHADER);
-    vert = CreateShader(vert_shader_text, GL_VERTEX_SHADER);
+    idFragShader = CreateShader(frag_shader_text, GL_FRAGMENT_SHADER);
+    idVertexShader = CreateShader(vert_shader_text, GL_VERTEX_SHADER);
 
-    program = glCreateProgram();
-    glAttachShader(program, frag);
-    glAttachShader(program, vert);
-    glLinkProgram(program);
+    idProgram = glCreateProgram();
+    glAttachShader(idProgram, idFragShader);
+    glAttachShader(idProgram, idVertexShader);
+    glLinkProgram(idProgram);
 
-    glGetProgramiv(program, GL_LINK_STATUS, &status);
-    if (!status) {
+    glGetProgramiv(idProgram, GL_LINK_STATUS, &status);
+    if (!status)
+    {
         char log[1000];
         GLsizei len;
-        glGetProgramInfoLog(program, 1000, &len, log);
+        glGetProgramInfoLog(idProgram, 1000, &len, log);
         fprintf(stderr, "Error: linking:\n%*s\n", len, log);
         exit(1);
     }
 
-    glUseProgram(program);
+    glUseProgram(idProgram);
 
     _gl.pos = 0;
     _gl.col = 1;
 
-    glBindAttribLocation(program, _gl.pos, "pos");
-    glBindAttribLocation(program, _gl.col, "color");
-    glLinkProgram(program);
+    glBindAttribLocation(idProgram, _gl.pos, "pos");
+    glBindAttribLocation(idProgram, _gl.col, "color");
+    glLinkProgram(idProgram);
 
-    _gl.rotationUniform =
-        glGetUniformLocation(program, "rotation");
+    _gl.rotationUniform = glGetUniformLocation(idProgram, "rotation");
 }
 
 void Application::CreateXDGSurface()
@@ -597,9 +595,8 @@ void Application::CreateXDGSurface()
 
 void Application::CreateIVISurface()
 {
-    uint32_t id_ivisurf = IVI_SURFACE_ID + (uint32_t)getpid();
-    _iviSurface = new IVISurface(ivi_application_surface_create(_iviApplication,
-                                                                        id_ivisurf, _surface->Get()));
+    uint32_t id = IVI_SURFACE_ID + (uint32_t)getpid();
+    _iviSurface = _iviApplication->CreateSurface(_surface, id);
 
     if (_iviSurface == nullptr)
     {
@@ -612,13 +609,9 @@ void Application::CreateIVISurface()
 
 void Application::CreateSurface()
 {
-    EGLBoolean ret;
-
     _surface = _compositor->CreateSurface();
 
-    _eglWindow->Create(_surface->Get(),
-                       _geometry.width,
-                       _geometry.height);
+    _eglWindow->Create(_surface, _geometry);
 
     if (_shell)
     {
@@ -626,7 +619,8 @@ void Application::CreateSurface()
     } else if (_iviApplication)
     {
         CreateIVISurface();
-    } else {
+    } else
+    {
         assert(0);
     }
 

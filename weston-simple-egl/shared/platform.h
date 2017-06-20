@@ -23,11 +23,9 @@
  * SOFTWARE.
  */
 
-#ifndef WESTON_PLATFORM_H
-#define WESTON_PLATFORM_H
+#pragma once
 
-#include <stdbool.h>
-#include <string.h>
+#include <cstring>
 
 #ifdef ENABLE_EGL
 #include <wayland-egl.h>
@@ -37,131 +35,111 @@
 #include "weston-egl-ext.h"
 #endif
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
+namespace Wayland
+{
 
 #ifdef ENABLE_EGL
 
-static bool
-weston_check_egl_extension(const char *extensions, const char *extension)
+static bool weston_check_egl_extension(const char * extensions, const char * extension)
 {
-	size_t extlen = strlen(extension);
-	const char *end = extensions + strlen(extensions);
+    size_t extlen = strlen(extension);
+    const char * end = extensions + strlen(extensions);
 
-	while (extensions < end) {
-		size_t n = 0;
+    while (extensions < end)
+    {
+        size_t n = 0;
 
-		/* Skip whitespaces, if any */
-		if (*extensions == ' ') {
-			extensions++;
-			continue;
-		}
+        /* Skip whitespaces, if any */
+        if (*extensions == ' ')
+        {
+            extensions++;
+            continue;
+        }
 
-		n = strcspn(extensions, " ");
+        n = strcspn(extensions, " ");
 
-		/* Compare strings */
-		if (n == extlen && strncmp(extension, extensions, n) == 0)
-			return true; /* Found */
+        /* Compare strings */
+        if (n == extlen && strncmp(extension, extensions, n) == 0)
+            return true; /* Found */
 
-		extensions += n;
-	}
+        extensions += n;
+    }
 
-	/* Not found */
-	return false;
+    /* Not found */
+    return false;
 }
 
-static inline void *
-weston_platform_get_egl_proc_address(const char *address)
+static inline void * weston_platform_get_egl_proc_address(const char * address)
 {
-	const char *extensions = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+    const char * extensions = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
 
-	if (extensions &&
-	    (weston_check_egl_extension(extensions, "EGL_EXT_platform_wayland") ||
-	     weston_check_egl_extension(extensions, "EGL_KHR_platform_wayland"))) {
-		return (void *) eglGetProcAddress(address);
-	}
-
-	return NULL;
+    if (extensions &&
+        (weston_check_egl_extension(extensions, "EGL_EXT_platform_wayland") ||
+         weston_check_egl_extension(extensions, "EGL_KHR_platform_wayland")))
+    {
+        return reinterpret_cast<void *>(eglGetProcAddress(address));
+    }
+    
+    return nullptr;
 }
 
-static inline EGLDisplay
-weston_platform_get_egl_display(EGLenum platform, void *native_display,
-				const EGLint *attrib_list)
+static inline EGLDisplay weston_platform_get_egl_display(EGLenum platform, void * nativeDisplay,
+                                                         const EGLint * attributeList)
 {
-	static PFNEGLGETPLATFORMDISPLAYEXTPROC get_platform_display = NULL;
+    static PFNEGLGETPLATFORMDISPLAYEXTPROC get_platform_display = nullptr;
 
-	if (!get_platform_display) {
-		get_platform_display = (PFNEGLGETPLATFORMDISPLAYEXTPROC)
-            weston_platform_get_egl_proc_address(
-                "eglGetPlatformDisplayEXT");
-	}
+    if (!get_platform_display)
+    {
+        get_platform_display = (PFNEGLGETPLATFORMDISPLAYEXTPROC)weston_platform_get_egl_proc_address("eglGetPlatformDisplayEXT");
+    }
 
-	if (get_platform_display)
-		return get_platform_display(platform,
-					    native_display, attrib_list);
+    if (get_platform_display)
+        return get_platform_display(platform, nativeDisplay, attributeList);
 
-	return eglGetDisplay((EGLNativeDisplayType) native_display);
+    return eglGetDisplay((EGLNativeDisplayType) nativeDisplay);
 }
 
-static inline EGLSurface
-weston_platform_create_egl_surface(EGLDisplay dpy, EGLConfig config,
-				   void *native_window,
-				   const EGLint *attrib_list)
+static inline EGLSurface weston_platform_create_egl_surface(EGLDisplay display, EGLConfig config,
+                                                            void * nativeWindow,
+                                                            const EGLint * attributeList)
 {
-	static PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC
-		create_platform_window = NULL;
+    static PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC
+        create_platform_window = NULL;
 
-	if (!create_platform_window) {
-		create_platform_window = (PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC)
-            weston_platform_get_egl_proc_address(
-                "eglCreatePlatformWindowSurfaceEXT");
-	}
+    if (!create_platform_window)
+    {
+        create_platform_window = (PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC)weston_platform_get_egl_proc_address("eglCreatePlatformWindowSurfaceEXT");
+    }
 
-	if (create_platform_window)
-		return create_platform_window(dpy, config,
-					      native_window,
-					      attrib_list);
+    if (create_platform_window)
+        return create_platform_window(display, config, nativeWindow, attributeList);
 
-	return eglCreateWindowSurface(dpy, config,
-				      (EGLNativeWindowType) native_window,
-				      attrib_list);
+    return eglCreateWindowSurface(display, config, (EGLNativeWindowType)nativeWindow, attributeList);
 }
 
-static inline EGLBoolean
-weston_platform_destroy_egl_surface(EGLDisplay display,
-				    EGLSurface surface)
+static inline EGLBoolean weston_platform_destroy_egl_surface(EGLDisplay display, EGLSurface surface)
 {
-	return eglDestroySurface(display, surface);
+    return eglDestroySurface(display, surface);
 }
 
 #else /* ENABLE_EGL */
 
-static inline void *
-weston_platform_get_egl_display(void *platform, void *native_display,
-				const int *attrib_list)
+static inline void * weston_platform_get_egl_display(void *platform, void * nativeDisplay,
+                const int *attributeList)
 {
-	return NULL;
+    return nullptr;
 }
 
 static inline void *
-weston_platform_create_egl_surface(void *dpy, void *config,
-				   void *native_window,
-				   const int *attrib_list)
+weston_platform_create_egl_surface(void * display, void * config, void * nativeWindow, const int * attributeList)
 {
-	return NULL;
+    return nullptr;
 }
 
-static inline unsigned int
-weston_platform_destroy_egl_surface(void *display,
-				    void *surface)
+static inline unsigned int weston_platform_destroy_egl_surface(void * display, void * surface)
 {
-	return 1;
+    return 1;
 }
 #endif /* ENABLE_EGL */
 
-#ifdef  __cplusplus
-}
-#endif
-
-#endif /* WESTON_PLATFORM_H */
+} // namespace Wayland

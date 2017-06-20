@@ -4,6 +4,7 @@ set(WAYLAND_CLASSES_DEFINES
     WAYLAND_CLASSES_DEBUG)
 set(WAYLAND_CLASSES_SOURCE_FILES
     Compositor.cpp
+    Cursor.cpp
     Registry.cpp
     Display.cpp
     Shm.cpp
@@ -18,6 +19,7 @@ set(WAYLAND_CLASSES_SOURCE_FILES
     Callback.cpp)
 set(WAYLAND_CLASSES_HEADER_FILES
     Compositor.h
+    Cursor.h
     Registry.h
     Display.h
     Shm.h

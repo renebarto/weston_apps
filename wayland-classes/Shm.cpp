@@ -1,11 +1,10 @@
 #include "Shm.h"
 
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <wayland-client.h>
+#include <wayland-cursor.h>
+#include "Cursor.h"
 
-namespace Wayland
-{
+using namespace Wayland;
 
 Shm::Shm(wl_shm * shm)
     : _shm(shm)
@@ -26,4 +25,11 @@ void Shm::Cleanup()
     _shm = nullptr;
 }
 
-} // namespace Wayland
+CursorTheme * Shm::Load(const char * name, int size)
+{
+    wl_cursor_theme * theme = wl_cursor_theme_load(name, size, _shm);
+    if (theme == nullptr)
+        return nullptr;
+    return new CursorTheme(theme);
+}
+

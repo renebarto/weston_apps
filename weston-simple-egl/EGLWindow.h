@@ -3,12 +3,15 @@
 #include <string>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include "Geometry.h"
 
 struct wl_surface;
 struct wl_egl_window;
 
 namespace Wayland
 {
+
+class Surface;
 
 class EGLWindow
 {
@@ -20,12 +23,11 @@ public:
                     const EGLint * configAttributes,
                     const EGLint * contextAttributes,
                     int bufferSize);
-    EGLDisplay GetDisplay() { return _display; }
     const char * GetSwapBuffersWithDamageExtension() { return _swapBuffersWithDamageExtension.c_str(); }
     bool DetermineSwapBuffersExtension();
-    bool Create(wl_surface * surface, int width, int height);
+    bool Create(Surface * surface, const Geometry & size);
     void DestroyWindow();
-    void Resize(int width, int height);
+    void Resize(const Geometry & size);
     EGLSurface CreateSurface();
     void DestroySurface();
     void SetSwapInterval(EGLint interval);
@@ -39,8 +41,7 @@ private:
     std::string _swapBuffersWithDamageExtension;
     PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC _swapBuffersWithDamage;
     wl_egl_window * _window;
-    int _width;
-    int _height;
+    Geometry _size;
 };
 
 }

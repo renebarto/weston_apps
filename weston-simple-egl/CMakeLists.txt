@@ -55,6 +55,7 @@ set(WESTON_SIMPL_EGL_SOURCE_FILES
     ZXDGShellV6.cpp
     ZXDGSurfaceV6.cpp
     ZXDGTopLevelV6.cpp
+    IVIApplication.cpp
     IVISurface.cpp
     EGLWindow.cpp
     protocol/xdg-shell-unstable-v6-protocol.c
@@ -66,6 +67,8 @@ set(WESTON_SIMPL_EGL_HEADER_FILES
     ZXDGSurfaceV6.h
     ZXDGTopLevelV6.h
     EGLWindow.h
+    Geometry.h
+    IVIApplication.h
     IVISurface.h
     IZXDGShellV6Listener.h
     IZXDGSurfaceV6Listener.h
