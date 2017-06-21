@@ -13,7 +13,6 @@
 
 find_package(PkgConfig)
 pkg_check_modules(PC_LIBFFI QUIET libffi)
-set(LIBFFI_DEFINITIONS ${PC_LIBFFI_CFLAGS_OTHER})
 
 if(PC_LIBFFI_FOUND)
     if(LIBFFI_REQUIRED_VERSION)
@@ -51,6 +50,7 @@ message(STATUS "  include dirs : ${PC_LIBFFI_INCLUDE_DIRS}")
 message(STATUS "  lib dirs     : ${PC_LIBFFI_LIBRARY_DIRS}")
 message(STATUS "  libs         : ${PC_LIBFFI_LIBRARIES}")
 
+set(LIBFFI_DEFINITIONS ${PC_LIBFFI_CFLAGS_OTHER})
 set(LIBFFI_LIBRARIES ${LIBFFI_LIBRARY} )
 set(LIBFFI_INCLUDE_DIR ${LIBFFI_INCLUDE_DIRS} )
 
@@ -63,4 +63,4 @@ else()
     message(WARNING "Could not find libffi, please install: sudo apt-get install libffi-dev")
 endif()
 
-mark_as_advanced(LIBFFI_INCLUDE_DIRS LIBFFI_LIBRARIES)
+mark_as_advanced(LIBFFI_DEFINITIONS LIBFFI_INCLUDE_DIRS LIBFFI_LIBRARIES)
