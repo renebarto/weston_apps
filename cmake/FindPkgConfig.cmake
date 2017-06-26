@@ -282,7 +282,7 @@ macro(_pkg_check_modules_internal _is_required _is_silent _no_cmake_path _no_cma
       _pkgconfig_add_extra_path(_extra_paths ENV CMAKE_APPBUNDLE_PATH)
     endif()
 
-    message(STATUS "_extra_paths                    : ${_extra_paths}")
+#    message(STATUS "_extra_paths                    : ${_extra_paths}")
 
     if(NOT "${_extra_paths}" STREQUAL "")
       # Save the PKG_CONFIG_PATH environment variable, and add paths
@@ -340,7 +340,7 @@ macro(_pkg_check_modules_internal _is_required _is_silent _no_cmake_path _no_cma
         endif()
         set(ENV{PKG_CONFIG_PATH} "${_pkgconfig_path}")
       endif()
-      message(STATUS "ENV{PKG_CONFIG_PATH}            : $ENV{PKG_CONFIG_PATH}")
+#      message(STATUS "ENV{PKG_CONFIG_PATH}            : $ENV{PKG_CONFIG_PATH}")
 
       # Unset variables
       unset(_lib_dirs)

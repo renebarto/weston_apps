@@ -1,11 +1,13 @@
 #include "Application.h"
 
 #include <cassert>
+#include "Compositor.h"
 #include "Display.h"
 #include "Keyboard.h"
 #include "Pointer.h"
 #include "Registry.h"
 #include "Seat.h"
+#include "Shm.h"
 #include "Surface.h"
 
 using namespace Wayland;
@@ -30,10 +32,10 @@ Application::~Application()
     Cleanup();
 }
 
-bool Application::Setup()
+bool Application::Setup(const char * name)
 {
     _display = new Display;
-    if (!_display->Setup(nullptr))
+    if (!_display->Setup(name))
     {
         std::cerr << "Error opening display" << std::endl;
         return false;
@@ -52,8 +54,11 @@ void Application::Cleanup()
     _pointer = nullptr;
     delete _seat;
     _seat = nullptr;
-    wl_shell_destroy(_shell);
-    wl_shm_destroy(_shm);
+    if (_shell != nullptr)
+        wl_shell_destroy(_shell);
+    _shell = nullptr;
+    delete _shm;
+    _shm = nullptr;
     delete _compositor;
     _compositor = nullptr;
     delete _display;
@@ -77,7 +82,7 @@ void Application::OnRegistryAdd(wl_registry *registry, uint32_t name,
     if (strcmp(interface, wl_compositor_interface.name) == 0)
         _compositor = new Compositor(reinterpret_cast<wl_compositor *>(wl_registry_bind(registry, name, &wl_compositor_interface, std::min(version, uint32_t(4)))));
     else if (strcmp(interface, wl_shm_interface.name) == 0)
-        _shm = reinterpret_cast<wl_shm *>(wl_registry_bind(registry, name, &wl_shm_interface, std::min(version, uint32_t(1))));
+        _shm = new Shm(reinterpret_cast<wl_shm *>(wl_registry_bind(registry, name, &wl_shm_interface, std::min(version, uint32_t(1)))));
     else if (strcmp(interface, wl_shell_interface.name) == 0)
         _shell = reinterpret_cast<wl_shell *>(wl_registry_bind(registry, name, &wl_shell_interface, std::min(version, uint32_t(1))));
     else if (strcmp(interface, wl_seat_interface.name) == 0)

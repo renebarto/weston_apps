@@ -17,12 +17,13 @@ set(HELLO_WAYLAND_HEADER_FILES
 set(HELLO_WAYLAND_DATA_FILES
     images.bin)
 set(HELLO_WAYLAND_LIBS
-    wayland-classes
+    wayland-classes-static
     wayland-client-shared)
 
 add_executable(${PROJECT_NAME} ${HELLO_WAYLAND_SOURCE_FILES} ${HELLO_WAYLAND_HEADER_FILES})
 target_link_libraries(${PROJECT_NAME} ${HELLO_WAYLAND_LIBS})
-add_dependencies(${PROJECT_NAME} wayland-classes)
+add_dependencies(${PROJECT_NAME} wayland-classes-static)
+set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "${LINK_RPATH}")
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${DATA_FILES} $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 
@@ -49,5 +50,9 @@ add_dependencies(install_${PROJECT_NAME}
 
 install(TARGETS ${PROJECT_NAME}
     RUNTIME
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+    COMPONENT ${PROJECT_NAME})
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/images.bin
     DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     COMPONENT ${PROJECT_NAME})

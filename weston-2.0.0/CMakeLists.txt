@@ -8,10 +8,6 @@ set(WESTON_REQUIRED_VERSION ${WESTON_VERSION})
 set(WESTON_NAME ${PROJECT_NAME})
 set(WESTON_BASE ${WESTON_NAME}-${WESTON_VERSION})
 
-set(LINK_WHOLE_LIB -Wl,--whole-archive)
-set(LINK_NO_WHOLE_LIB -Wl,--no-whole-archive)
-set(LINK_RPATH -Wl,-rpath,'\$ORIGIN/../lib/')
-
 include(show_target_properties)
 
 find_package(Pixman REQUIRED)

@@ -7,7 +7,7 @@
 #
 # Will be defined:
 #  GLEW_FOUND - System has LibGLEW
-#  GLEW_INCLUDE_DIR - The LibGLEW include directories
+#  GLEW_INCLUDE_DIRS - The LibGLEW include directories
 #  GLEW_LIBRARIES - The libraries needed to use LibGLEW
 #  GLEW_DEFINITIONS - Compiler switches required for using LibGLEW
 
@@ -27,7 +27,7 @@ else()
 endif()
 
 if(PC_GLEW_FOUND)
-    find_path(GLEW_INCLUDE_DIRS GLEW/gl.h
+    find_path(GLEW_INCLUDE_DIRS GL/glew.h
         HINTS ${PC_GLEW_INCLUDEDIR} ${PC_GLEW_INCLUDE_DIRS})
 
     find_library(GLEW_LIBRARY NAMES glew GLEW
@@ -49,6 +49,8 @@ message(STATUS "  cflags other : ${PC_GLEW_CFLAGS_OTHER}")
 message(STATUS "  include dirs : ${PC_GLEW_INCLUDE_DIRS}")
 message(STATUS "  lib dirs     : ${PC_GLEW_LIBRARY_DIRS}")
 message(STATUS "  libs         : ${PC_GLEW_LIBRARIES}")
+message(STATUS "  include      : ${GLEW_INCLUDE_DIRS}")
+message(STATUS "  library      : ${GLEW_LIBRARY}")
 
 set(GLEW_DEFINITIONS ${PC_GLEW_CFLAGS_OTHER})
 set(GLEW_LIBRARIES ${GLEW_LIBRARY} )

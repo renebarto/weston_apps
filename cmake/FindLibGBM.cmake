@@ -6,7 +6,7 @@
 # (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #
 # Will be defined:
-#  LIBGBM_INCLUDE_DIR - the gbm include directories
+#  LIBGBM_INCLUDE_DIRS - the gbm include directories
 #  LIBGBM_LIBRARIES - link these to use gbm.
 #
 # Copyright (C) 2015 Igalia S.L.

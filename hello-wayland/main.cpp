@@ -27,8 +27,9 @@ void OnButtonPressed(uint32_t button)
 
 int main(int argc, char * argv[])
 {
+    const char * name = argv[1];
     Wayland::Application app;
-    if (!app.Setup())
+    if (!app.Setup(name))
         return EXIT_FAILURE;
 
     int image = open("images.bin", O_RDWR);
@@ -40,7 +41,7 @@ int main(int argc, char * argv[])
     }
 
     Wayland::ShmPool pool;
-    pool.Create(&app, image);
+    pool.Create(app.GetShm(), image);
     Wayland::ShellSurface surface;
     surface.Create(app.GetCompositor(), app.GetShell());
     Wayland::Buffer buffer;

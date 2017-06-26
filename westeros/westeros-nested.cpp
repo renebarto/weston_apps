@@ -1032,8 +1032,8 @@ void WstNestedConnectionAttachAndCommitDevice( WstNestedConnection *nc,
       #ifdef ENABLE_SBPROTOCOL
       struct wl_buffer *buffer;
       
-      buffer= wl_sb_create_buffer( nc->sb, 
-                                   (uint32_t)deviceBuffer, 
+      buffer= wl_sb_create_buffer( nc->sb,
+                                   *reinterpret_cast<uint32_t *>(&deviceBuffer),
                                    width, 
                                    height, 
                                    stride,

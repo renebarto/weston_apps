@@ -13,6 +13,7 @@ namespace Wayland
 class Display;
 class Compositor;
 class Seat;
+class Shm;
 class Keyboard;
 class Pointer;
 using KeyCode = int;
@@ -27,12 +28,12 @@ public:
     Application();
     ~Application();
 
-    bool Setup();
+    bool Setup(const char * name);
     void Cleanup();
     bool Dispatch();
 
     Compositor * GetCompositor() { return _compositor; }
-    wl_shm * GetShm() { return _shm; }
+    Shm * GetShm() { return _shm; }
     wl_shell * GetShell() { return _shell; }
     const Seat * GetSeat() const { return _seat; }
     Pointer * GetPointer() { return _pointer; }
@@ -97,7 +98,7 @@ private:
 
     Display * _display;
     Compositor * _compositor;
-    wl_shm * _shm;
+    Shm * _shm;
     wl_shell * _shell;
     Seat * _seat;
     Pointer * _pointer;

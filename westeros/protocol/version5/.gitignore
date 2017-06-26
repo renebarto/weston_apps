@@ -1,0 +1,3 @@
+xdg-shell-protocol.c
+xdg-shell-server-protocol.h
+xdg-shell-client-protocol.h

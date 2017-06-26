@@ -41,13 +41,24 @@ set(WAYLAND_CLASSES_INCLUDE_DIRS
     .
     ${SYSTEM_INCLUDES})
 set(WAYLAND_CLASSES_LIBS
-    wayland-client-shared)
+    wayland-client-shared
+    wayland-cursor-shared)
 
 add_library(${PROJECT_NAME} SHARED ${WAYLAND_CLASSES_SOURCE_FILES} ${WAYLAND_CLASSES_HEADER_FILES})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${WAYLAND_CLASSES_DEFINES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${WAYLAND_CLASSES_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${WAYLAND_CLASSES_LIBS})
 add_dependencies(${PROJECT_NAME} wayland-client-shared)
+set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "${LINK_RPATH}")
+
+include(show_target_properties)
+show_target_properties(${PROJECT_NAME})
+
+add_library(${PROJECT_NAME}-static STATIC ${WAYLAND_CLASSES_SOURCE_FILES} ${WAYLAND_CLASSES_HEADER_FILES})
+target_compile_definitions(${PROJECT_NAME}-static PUBLIC ${WAYLAND_CLASSES_DEFINES})
+target_include_directories(${PROJECT_NAME}-static PUBLIC ${WAYLAND_CLASSES_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME}-static ${WAYLAND_CLASSES_LIBS})
+add_dependencies(${PROJECT_NAME}-static wayland-client-shared)
 
 include(show_target_properties)
 show_target_properties(${PROJECT_NAME})

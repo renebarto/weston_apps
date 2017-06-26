@@ -217,6 +217,7 @@ exit:
 
 WstGLCtx* WstGLInit() 
 {
+    printf("Initialize westeros_gl-drm\n");
    /*
     *  Establish the overloading of a subset of EGL methods
     */
