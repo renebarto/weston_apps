@@ -42,7 +42,7 @@ pkg_check_modules(PC_FREEGLUT QUIET glut)
 #    set(FREEGLUT_FOUND_TEXT "Not found")
 #endif()
 
-message(STATUS "freeglut           : ${FREEGLUT_FOUND_TEXT}")
+message(STATUS "freeglut       : ${FREEGLUT_FOUND_TEXT}")
 message(STATUS "  version      : ${PC_FREEGLUT_VERSION}")
 message(STATUS "  cflags       : ${PC_FREEGLUT_CFLAGS}")
 message(STATUS "  cflags other : ${PC_FREEGLUT_CFLAGS_OTHER}")
@@ -62,7 +62,7 @@ find_package_handle_standard_args(FREEGLUT DEFAULT_MSG
 
 if (FREEGLUT_FOUND)
 else()
-    message(WARNING "Could not find libfreeglut, please install: sudo apt-get install libfreeglut3-dev")
+    message(WARNING "Could not find libfreeglut, please install: sudo apt install freeglut3-dev")
 endif()
 
 mark_as_advanced(FREEGLUT_DEFINITIONS FREEGLUT_INCLUDE_DIRS FREEGLUT_LIBRARIES)

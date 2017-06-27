@@ -23,27 +23,38 @@ set(ENABLE_WESTEROS_RENDERGL ON)
 include(show_target_properties)
 
 if (${WESTEROS_PLATFORM_KYLIN})
-    set(OPENGL_LIBRARY mali)
+elseif(${WESTEROS_PLATFORM_RPI})
 else()
     find_package(OpenGL REQUIRED)
+    find_package(FreeGLUT QUIET)
+    find_package(LibDRM QUIET)
+    find_package(LibGBM QUIET)
+    find_package(GLEW QUIET)
+    find_package(LibX11 QUIET)
 endif()
-#find_package(Pixman REQUIRED)
+
 find_package(LibXKBCommon REQUIRED)
-#find_package(LibInput REQUIRED)
 find_package(EGL REQUIRED)
-find_package(GLES REQUIRED)
-find_package(FreeGLUT REQUIRED)
-#find_package(Eudev REQUIRED)
-find_package(LibDRM REQUIRED)
-find_package(LibGBM REQUIRED)
-#find_package(Mtdev REQUIRED)
-#find_package(LibFFI REQUIRED)
-#find_package(LibEvdev REQUIRED)
-find_package(GLEW QUIET)
+find_package(GLESV2 REQUIRED)
+find_package(GStreamer1 REQUIRED)
+
+# Used but not required
+find_package(GLESV1 QUIET)
+
+# Needed but possibly built in this project
 find_package(Wayland QUIET)
 find_package(WaylandEGL QUIET)
 find_package(WaylandScanner QUIET)
-find_package(LibX11 QUIET)
+
+# Needed for Linux Desktop?
+
+# Not needed?
+#find_package(Pixman REQUIRED)
+#find_package(LibInput REQUIRED)
+#find_package(Eudev REQUIRED)
+#find_package(Mtdev REQUIRED)
+#find_package(LibFFI REQUIRED)
+#find_package(LibEvdev REQUIRED)
 #find_package(Cairo REQUIRED)
 #find_package(Fontconfig REQUIRED)
 #find_package(Freetype REQUIRED)
@@ -60,7 +71,6 @@ find_package(LibX11 QUIET)
 #find_package(LibXau REQUIRED)
 #find_package(LibXdmcp REQUIRED)
 #find_package(Weston QUIET)
-find_package(GStreamer1 QUIET)
 
 if (NOT WAYLAND_FOUND)
     set(WAYLAND_CLIENT_LIBRARIES wayland-client-shared)
@@ -70,6 +80,80 @@ endif()
 if (NOT WAYLAND_SCANNER_FOUND)
     set(WAYLAND_SCANNER_PATH $<TARGET_FILE:wayland-scanner>)
 endif()
+
+set(WESTEROS_INCLUDES)
+set(WESTEROS_OPENGL_LIBS)
+
+list(APPEND WESTEROS_INCLUDES
+    .
+    simplebuffer/protocol
+    simplebuffer
+    simpleshell/protocol
+    simpleshell
+    protocol
+    ${SYSTEM_INCLUDES})
+
+if (WESTEROS_PLATFORM_RPI)
+    list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_PLATFORM_RPI WESTEROS_PLATFORM_EMBEDDED BUILD_WAYLAND)
+    list(APPEND WESTEROS_INCLUDES rpi/westeros-gl)
+    list(APPEND WESTEROS_OPENGL_LIBS
+        bcm_host
+        vchostif
+        westeros_gl)
+elseif (WESTEROS_PLATFORM_KYLIN)
+    list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_PLATFORM_KYLIN WESTEROS_PLATFORM_EMBEDDED)
+    list(APPEND WESTEROS_INCLUDES kylin/westeros-gl)
+    list(APPEND WESTEROS_OPENGL_LIBS
+        mali
+        westeros_gl)
+else()
+    list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_PLATFORM_EMBEDDED)
+    list(APPEND WESTEROS_INCLUDES
+        drm/westeros-gl
+        ${LIBDRM_INCLUDE_DIRS}
+        ${LIBGBM_INCLUDE_DIRS})
+    list(APPEND WESTEROS_OPENGL_LIBS
+        westeros_gl
+        ${FREEGLUT_LIBRARIES}
+        ${OPENGL_LIBRARIES}
+        ${GLEW_LIBRARIES}
+        ${LIBDRM_LIBRARIES}
+        ${LIBGBM_LIBRARIES})
+endif()
+
+if (WAYLAND_EGL_FOUND)
+    message(STATUS "Building with Wayland-EGL: ${WAYLAND_EGL_LIBRARIES} ${GLESV2_LIBRARIES}")
+    list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_HAVE_WAYLAND_EGL)
+    set(WESTEROS_EGL_LIBS
+        ${WAYLAND_EGL_LIBRARIES} ${GLESV2_LIBRARIES})
+else()
+    set(WESTEROS_EGL_LIBS
+        westeros_egl)
+endif()
+
+if(ENABLE_XDG_V4)
+    list(APPEND WESTEROS_COMPILE_DEFINITIONS USE_XDG_VERSION4)
+    list(APPEND WESTEROS_INCLUDES protocol/version4)
+    list(APPEND WESTEROS_XDG_PROTOCOL_SOURCES protocol/version4/xdg-shell-server-protocol.h protocol/version4/xdg-shell-protocol.c)
+endif()
+
+if(ENABLE_XDG_V5)
+    list(APPEND WESTEROS_COMPILE_DEFINITIONS USE_XDG_VERSION5)
+    list(APPEND WESTEROS_INCLUDES protocol/version5)
+    list(APPEND WESTEROS_XDG_PROTOCOL_SOURCES protocol/version5/xdg-shell-server-protocol.h protocol/version5/xdg-shell-protocol.c)
+endif()
+
+if (ENABLE_WESTEROS_SBPROTOCOL)
+    list(APPEND WESTEROS_COMPILE_DEFINITIONS ENABLE_SBPROTOCOL)
+endif()
+
+if (ENABLE_WESTEROS_RENDERGL)
+endif()
+
+message(STATUS "WESTEROS_COMPILE_DEFINITIONS: ${WESTEROS_COMPILE_DEFINITIONS}")
+message(STATUS "WESTEROS_INCLUDES           : ${WESTEROS_INCLUDES}")
+message(STATUS "WESTEROS_EGL_LIBS           : ${WESTEROS_EGL_LIBS}")
+
 
 # Create protocol sources
 # simplebuffer/protocol/simple-buffer.xml
@@ -172,86 +256,17 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/vpc-protocol.c
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 
-set(WESTEROS_COMPILE_DEFINITIONS
+list(APPEND WESTEROS_COMPILE_DEFINITIONS
     ${WAYLAND_COMPILE_DEFINITIONS}
     _GNU_SOURCE
     )
-set(WESTEROS_COMPILER_OPTIONS -Wall -Wextra
+list(APPEND WESTEROS_COMPILER_OPTIONS
+    -Wall -Wextra
     ${WAYLAND_COMPILER_OPTIONS}
 #    -Wno-unused-parameter -Wno-shift-negative-value -Wno-missing-field-initializers
 #    -fvisibility=hidden -Wstrict-prototypes -Wmissing-prototypes -Wsign-compare
 
     )
-set(WESTEROS_INCLUDES
-    .
-    simplebuffer/protocol
-    simplebuffer
-    simpleshell/protocol
-    simpleshell
-    protocol
-    ${SYSTEM_INCLUDES})
-
-if (GLEW_FOUND AND GLESV2_FOUND AND WESTEROS_PLATFORM_RPI)
-    list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_PLATFORM_RPI)
-    list(APPEND WESTEROS_INCLUDES rpi/westeros-gl)
-    set(WESTEROS_OPENGL_LIBS
-        westeros_gl
-        )
-elseif (GLEW_FOUND AND GLESV2_FOUND AND WESTEROS_PLATFORM_KYLIN)
-    list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_PLATFORM_KYLIN WESTEROS_PLATFORM_EMBEDDED)
-    list(APPEND WESTEROS_INCLUDES kylin/westeros-gl)
-    set(WESTEROS_OPENGL_LIBS
-        westeros_gl
-        )
-else()
-    list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_PLATFORM_EMBEDDED)
-    list(APPEND WESTEROS_INCLUDES
-        drm/westeros-gl
-        ${LIBDRM_INCLUDE_DIRS}
-        ${LIBGBM_INCLUDE_DIRS})
-    set(WESTEROS_OPENGL_LIBS
-        westeros_gl
-        ${FREEGLUT_LIBRARIES}
-        ${OPENGL_LIBRARIES}
-        ${GLEW_LIBRARIES}
-        ${LIBDRM_LIBRARIES}
-        ${LIBGBM_LIBRARIES}
-        )
-endif()
-
-if (WAYLAND_EGL_FOUND)
-    message(STATUS "Building with Wayland-EGL: ${WAYLAND_EGL_LIBRARIES} ${GLESV2_LIBRARIES}")
-    list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_HAVE_WAYLAND_EGL)
-    set(WESTEROS_EGL_LIBS
-        ${WAYLAND_EGL_LIBRARIES} ${GLESV2_LIBRARIES})
-else()
-    set(WESTEROS_EGL_LIBS
-        westeros_egl)
-endif()
-
-if(ENABLE_XDG_V4)
-    list(APPEND WESTEROS_COMPILE_DEFINITIONS USE_XDG_VERSION4)
-    list(APPEND WESTEROS_INCLUDES protocol/version4)
-    list(APPEND WESTEROS_XDG_PROTOCOL_SOURCES protocol/version4/xdg-shell-server-protocol.h protocol/version4/xdg-shell-protocol.c)
-endif()
-
-if(ENABLE_XDG_V5)
-    list(APPEND WESTEROS_COMPILE_DEFINITIONS USE_XDG_VERSION5)
-    list(APPEND WESTEROS_INCLUDES protocol/version5)
-    list(APPEND WESTEROS_XDG_PROTOCOL_SOURCES protocol/version5/xdg-shell-server-protocol.h protocol/version5/xdg-shell-protocol.c)
-endif()
-
-if (ENABLE_WESTEROS_SBPROTOCOL)
-    list(APPEND WESTEROS_COMPILE_DEFINITIONS ENABLE_SBPROTOCOL)
-endif()
-
-if (ENABLE_WESTEROS_RENDERGL)
-endif()
-
-message(STATUS "WESTEROS_COMPILE_DEFINITIONS: ${WESTEROS_COMPILE_DEFINITIONS}")
-message(STATUS "WESTEROS_INCLUDES           : ${WESTEROS_INCLUDES}")
-message(STATUS "WESTEROS_EGL_LIBS           : ${WESTEROS_EGL_LIBS}")
-
 # westeros_simplebuffer_client
 set(WESTEROS_SIMPLEBUFFER_CLIENT_COMPILE_DEFINITIONS
     ${WESTEROS_COMPILE_DEFINITIONS}
@@ -627,6 +642,7 @@ set(WESTEROS_COMPOSITOR_SOURCES
     westeros-render.h
     protocol/vpc-protocol.c
     protocol/vpc-server-protocol.h
+    protocol/vpc-client-protocol.h
     ${WESTEROS_XDG_PROTOCOL_SOURCES}
     )
 set(WESTEROS_COMPOSITOR_INCLUDE_DIRS
@@ -859,6 +875,11 @@ set(PACKAGE_VERSION ${WESTEROS_VERSION})
 
 configure_file(westeros-compositor.pc.in ${CMAKE_CURRENT_SOURCE_DIR}/westeros-compositor.pc @ONLY)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/symlink.cmake)
+
+install(SCRIPT symlink.cmake
+    COMPONENT ${PROJECT_NAME})
+
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/westeros-compositor.pc
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig
     COMPONENT ${PROJECT_NAME})
@@ -943,9 +964,7 @@ install(TARGETS westeros
     DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     COMPONENT ${PROJECT_NAME})
 
-install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink
-              westeros-${WESTEROS_VERSION}
-              ${CMAKE_INSTALL_PREFIX}/bin/westeros)"
+install(CODE "install_symlink(${CMAKE_INSTALL_PREFIX}/bin/westeros westeros-${WESTEROS_VERSION})"
     COMPONENT ${PROJECT_NAME})
 
 install(TARGETS westeros_player
@@ -953,9 +972,7 @@ install(TARGETS westeros_player
     DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     COMPONENT ${PROJECT_NAME})
 
-install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink
-              ${CMAKE_INSTALL_PREFIX}/bin/westeros_player-${WESTEROS_VERSION}
-              ${CMAKE_INSTALL_PREFIX}/bin/westeros_player)"
+install(CODE "install_symlink(${CMAKE_INSTALL_PREFIX}/bin/westeros_player westeros_player-${WESTEROS_VERSION})"
     COMPONENT ${PROJECT_NAME})
 
 install(TARGETS westeros_test
@@ -963,9 +980,7 @@ install(TARGETS westeros_test
     DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     COMPONENT ${PROJECT_NAME})
 
-install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink
-              westeros_test-${WESTEROS_VERSION}
-              ${CMAKE_INSTALL_PREFIX}/bin/westeros_test)"
+install(CODE "install_symlink(${CMAKE_INSTALL_PREFIX}/bin/westeros_test westeros_test-${WESTEROS_VERSION})"
     COMPONENT ${PROJECT_NAME})
 
 install(FILES

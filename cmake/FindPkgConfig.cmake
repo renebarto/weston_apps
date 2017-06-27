@@ -281,6 +281,7 @@ macro(_pkg_check_modules_internal _is_required _is_silent _no_cmake_path _no_cma
       _pkgconfig_add_extra_path(_extra_paths ENV CMAKE_FRAMEWORK_PATH)
       _pkgconfig_add_extra_path(_extra_paths ENV CMAKE_APPBUNDLE_PATH)
     endif()
+    list(APPEND _extra_paths ${CMAKE_SYSROOT}/usr)
 
 #    message(STATUS "_extra_paths                    : ${_extra_paths}")
 

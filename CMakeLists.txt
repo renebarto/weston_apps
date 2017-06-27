@@ -33,15 +33,15 @@ else()
     message(FATAL_ERROR "Invalid build type: " ${CMAKE_BUILD_TYPE})
 endif()
 
-set(BUILD_BASE_DIR ${CMAKE_SOURCE_DIR}/build CACHE STRING
-    "Build root directory.")
-set(CMAKE_BINARY_DIR ${BUILD_BASE_DIR}/${CONFIG_DIR} CACHE STRING
-    "Build directory.")
-message(STATUS "Build base directory: " ${BUILD_BASE_DIR})
+#set(BUILD_BASE_DIR ${CMAKE_SOURCE_DIR}/build CACHE STRING
+#    "Build root directory.")
+#set(CMAKE_BINARY_DIR ${BUILD_BASE_DIR}/${CONFIG_DIR} CACHE STRING
+#    "Build directory.")
+#message(STATUS "Build base directory: " ${BUILD_BASE_DIR})
 message(STATUS "Build config directory: " ${CMAKE_BINARY_DIR})
 
-set(OUTPUT_BASE_DIR ${CMAKE_SOURCE_DIR}/output)
-message(STATUS "Output base directory: " ${OUTPUT_BASE_DIR})
+#set(OUTPUT_BASE_DIR ${CMAKE_SOURCE_DIR}/output)
+#message(STATUS "Output base directory: " ${OUTPUT_BASE_DIR})
 
 message(STATUS "Sytem root  directory: " ${CMAKE_SYSROOT})
 message(STATUS "Install prefix       : " ${CMAKE_INSTALL_PREFIX})
@@ -56,12 +56,14 @@ message(STATUS "CMAKE_PREFIX_PATH    : ${CMAKE_PREFIX_PATH}")
 #set(CMAKE_FIND_ROOT_PATH ${CMAKE_INSTALL_PREFIX} /usr /usr/local)
 #message(STATUS "CMAKE_FIND_ROOT_PATH : ${CMAKE_FIND_ROOT_PATH}")
 
+if (NOT CMAKE_CROSSCOMPILING)
 list(APPEND SYSTEM_INCLUDES ${CMAKE_INSTALL_PREFIX}/include)
 list(APPEND SYSTEM_INCLUDES /usr/include)
 list(APPEND SYSTEM_INCLUDES /usr/include/x86_64-linux-gnu)
 list(APPEND SYSTEM_INCLUDES /usr/local/include)
 list(APPEND SYSTEM_INCLUDES /usr/local/include/x86_64-linux-gnu)
 message(STATUS "Add directories SYSTEM_INCLUDES: ${SYSTEM_INCLUDES}")
+endif()
 
 #set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_BASE_DIR}/lib)
 #message(STATUS "Static lib output directory:  " ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})

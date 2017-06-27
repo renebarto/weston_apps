@@ -65,7 +65,7 @@ static int ctxCount = 0;
 
 WstGLCtx *WstGLInit()
 {
-    cerr << "Initialize westeros_gl-rpi" << endl;
+    printf("Initialize westeros_gl-rpi\n");
     WstGLCtx *ctx = 0;
 
     ctx = (WstGLCtx *) calloc(1, sizeof(WstGLCtx));
