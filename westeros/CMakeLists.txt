@@ -25,11 +25,8 @@ include(show_target_properties)
 if (${WESTEROS_PLATFORM_KYLIN})
 elseif(${WESTEROS_PLATFORM_RPI})
 else()
-    find_package(OpenGL REQUIRED)
-    find_package(FreeGLUT QUIET)
     find_package(LibDRM QUIET)
     find_package(LibGBM QUIET)
-    find_package(GLEW QUIET)
     find_package(LibX11 QUIET)
 endif()
 
@@ -114,9 +111,6 @@ else()
         ${LIBGBM_INCLUDE_DIRS})
     list(APPEND WESTEROS_OPENGL_LIBS
         westeros_gl
-        ${FREEGLUT_LIBRARIES}
-        ${OPENGL_LIBRARIES}
-        ${GLEW_LIBRARIES}
         ${LIBDRM_LIBRARIES}
         ${LIBGBM_LIBRARIES})
 endif()
@@ -703,9 +697,6 @@ set(WESTEROS_APP_INCLUDE_DIRS
 set(WESTEROS_APP_LIBS
     ${WAYLAND_SERVER_LIBRARIES}
     westeros_compositor
-    ${FREEGLUT_LIBRARIES}
-    ${OPENGL_LIBRARIES}
-    ${GLEW_LIBRARIES}
     ${LIBX11_LIBRARIES}
     ${EGL_LIBRARIES}
     ${GLESV2_LIBRARIES}
@@ -781,8 +772,8 @@ set(WESTEROS_TEST_LIBS
     westeros_simpleshell_client
     ${WESTEROS_EGL_LIBS}
     ${EGL_LIBRARIES}
-    ${OPENGL_LIBRARIES}
-    ${GLEW_LIBRARIES}
+#    ${OPENGL_LIBRARIES}
+#    ${GLEW_LIBRARIES}
     ${LIBXKBCOMMON_LIBRARIES}
     )
 message(STATUS "WESTEROS_TEST_INCLUDE_DIRS: ${WESTEROS_TEST_INCLUDE_DIRS}")
