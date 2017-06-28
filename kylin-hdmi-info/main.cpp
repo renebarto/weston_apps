@@ -1,7 +1,10 @@
 #include <iostream>
 #include <iomanip>
-#include <realtek/genericLinux/include/hdmi_wrapper.h>
-#include <realtek/genericLinux/include/vout_wrapper.h>
+#include <asm/types.h>
+#include <genericLinux/include/hdmi_wrapper.h>
+#include <genericLinux/include/vout_wrapper.h>
+//#include <hardware/libhardware/include/hardware/hardware.h>
+#include <device/realtek/proprietary/libs/HDMIControl/HDMIAdapter/HDMIAdapter_Phoenix.h>
 
 using namespace std;
 
@@ -41,18 +44,26 @@ int main()
 {
     int result;
 
-    result = hdmi_wrap_init();
+    PhoenixHDMIAdapter adapter;
 
-    cout << "hdmi_wrap_init(): " << result << endl;
+//    const hw_module_t * module;
+//    result = hw_get_module("hdmi", &module);
+//
+//    cout << "hw_get_module(hdmi): " << result << "->" << module << endl;
 
-    unsigned char EDIDBuffer[128];
-    result = hdmi_wrap_get_EDID(EDIDBuffer);
+//    result = hdmi_wrap_init();
+//
+//    cout << "hdmi_wrap_init(): " << result << endl;
+//
+//    unsigned char EDIDBuffer[256];
+//    result = hdmi_wrap_get_EDID(EDIDBuffer);
+//
+//    cout << "hdmi_wrap_get_EDID(EDIDBuffer): " << result << endl;
+//    if (result == 0)
+//    {
+//        DumpBuffer(EDIDBuffer, sizeof(EDIDBuffer));
+//    }
 
-    cout << "hdmi_wrap_get_EDID(EDIDBuffer): " << result << endl;
-    if (result == 0)
-    {
-        DumpBuffer(EDIDBuffer, sizeof(EDIDBuffer));
-    }
 
 //    result = vo_wrap_init(VO_WRAP_VIDEO_PLANE_V1);
 //
@@ -142,13 +153,13 @@ int main()
 //    vo_wrap_deinit(VO_WRAP_VIDEO_PLANE_V1);
 //    cout << "vo_wrap_deinit(VO_WRAP_VIDEO_PLANE_V1)" << endl;
 //
-    hdmi_wrap_turn_off();
-
-    cout << "hdmi_wrap_turn_off()" << endl;
-
-    hdmi_wrap_deinit();
-
-    cout << "hdmi_wrap_deinit()" << endl;
+//    hdmi_wrap_turn_off();
+//
+//    cout << "hdmi_wrap_turn_off()" << endl;
+//
+//    hdmi_wrap_deinit();
+//
+//    cout << "hdmi_wrap_deinit()" << endl;
 
     return 0;
 }
