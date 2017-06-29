@@ -454,8 +454,7 @@ set(WESTEROS_GL_RPI_COMPILE_DEFINITIONS
 set(WESTEROS_GL_RPI_COMPILER_OPTIONS ${WESTEROS_COMPILER_OPTIONS} -pthread)
 set(WESTEROS_GL_RPI_SOURCES
     rpi/westeros-gl/westeros-gl.cpp
-    rpi/westeros-gl/westeros-gl.h
-    rpi/westeros-render-dispmanx/westeros-render-dispmanx.cpp)
+    rpi/westeros-gl/westeros-gl.h)
 set(WESTEROS_GL_RPI_INCLUDE_DIRS
     ${WESTEROS_INCLUDES}
     )
@@ -633,6 +632,55 @@ set_property(TARGET westeros_render_embedded-shared PROPERTY SOVERSION ${WESTERO
 set_property(TARGET westeros_render_embedded-shared PROPERTY OUTPUT_NAME westeros_render_embedded)
 
 show_target_properties(westeros_render_embedded-shared)
+
+if (WESTEROS_PLATFORM_RPI)
+# westeros_render_dispmanx
+set(WESTEROS_RENDER_DISPMANX_COMPILE_DEFINITIONS
+    ${WESTEROS_COMPILE_DEFINITIONS}
+    )
+set(WESTEROS_RENDER_DISPMANX_COMPILER_OPTIONS ${WESTEROS_COMPILER_OPTIONS} -pthread)
+set(WESTEROS_RENDER_DISPMANX_SOURCES
+    rpi/westeros-gl/westeros-gl.h
+    rpi/westeros-render-dispmanx/westeros-render-dispmanx.cpp)
+set(WESTEROS_RENDER_DISPMANX_INCLUDE_DIRS
+    ${WESTEROS_INCLUDES}
+    )
+set(WESTEROS_RENDER_DISPMANX_LIBS
+    ${WESTEROS_EGL_LIBS}
+    ${EGL_LIBRARIES}
+    ${WESTEROS_OPENGL_LIBS}
+    ${WAYLAND_SERVER_LIBRARIES}
+    westeros_simplebuffer_server
+    )
+message(STATUS "WESTEROS_RENDER_DISPMANX_COMPILE_DEFINITIONS : ${WESTEROS_RENDER_DISPMANX_COMPILE_DEFINITIONS}")
+message(STATUS "WESTEROS_RENDER_DISPMANX_COMPILER_OPTIONS    : ${WESTEROS_RENDER_DISPMANX_COMPILER_OPTIONS}")
+message(STATUS "WESTEROS_RENDER_DISPMANX_INCLUDE_DIRS        : ${WESTEROS_RENDER_DISPMANX_INCLUDE_DIRS}")
+message(STATUS "WESTEROS_RENDER_DISPMANX_LIBS                : ${WESTEROS_RENDER_DISPMANX_LIBS}")
+
+add_library(westeros_render_dispmanx STATIC ${WESTEROS_RENDER_DISPMANX_SOURCES})
+target_compile_definitions(westeros_render_dispmanx PRIVATE ${WESTEROS_RENDER_DISPMANX_COMPILE_DEFINITIONS})
+target_compile_options(westeros_render_dispmanx PRIVATE ${WESTEROS_RENDER_DISPMANX_COMPILER_OPTIONS})
+target_include_directories(westeros_render_dispmanx PRIVATE ${WESTEROS_RENDER_DISPMANX_INCLUDE_DIRS})
+target_link_libraries(westeros_render_dispmanx PRIVATE ${WESTEROS_RENDER_DISPMANX_LIBS})
+set_target_properties(westeros_render_dispmanx PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(westeros_render_dispmanx PROPERTIES LINK_FLAGS "-rpath ../lib")
+
+show_target_properties(westeros_render_dispmanx)
+
+add_library(westeros_render_dispmanx-shared SHARED ${WESTEROS_RENDER_DISPMANX_SOURCES})
+target_compile_definitions(westeros_render_dispmanx-shared PRIVATE ${WESTEROS_RENDER_DISPMANX_COMPILE_DEFINITIONS})
+target_compile_options(westeros_render_dispmanx-shared PRIVATE ${WESTEROS_RENDER_DISPMANX_COMPILER_OPTIONS})
+target_include_directories(westeros_render_dispmanx-shared PRIVATE ${WESTEROS_RENDER_DISPMANX_INCLUDE_DIRS})
+target_link_libraries(westeros_render_dispmanx-shared PRIVATE ${WESTEROS_RENDER_DISPMANX_LIBS})
+set_target_properties(westeros_render_dispmanx-shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(westeros_render_dispmanx-shared PROPERTIES LINK_FLAGS "${LINK_RPATH}")
+set_property(TARGET westeros_render_dispmanx-shared PROPERTY VERSION ${WESTEROS_VERSION_MAJOR}.${WESTEROS_VERSION_MINOR}.${WESTEROS_VERSION_MICRO})
+set_property(TARGET westeros_render_dispmanx-shared PROPERTY SOVERSION ${WESTEROS_VERSION_MAJOR})
+set_property(TARGET westeros_render_dispmanx-shared PROPERTY OUTPUT_NAME westeros_render_dispmanx)
+
+show_target_properties(westeros_render_dispmanx-shared)
+
+endif()
 
 # westeros_compositor
 set(WESTEROS_COMPOSITOR_COMPILE_DEFINITIONS
@@ -865,6 +913,12 @@ add_custom_target(${WESTEROS_BASE} DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/protocol/vpc-server-protocol.h
     )
 
+if (WESTEROS_PLATFORM_RPI)
+add_dependencies(${WESTEROS_BASE}
+    westeros_render_dispmanx
+    westeros_render_dispmanx-shared)
+endif()
+
 add_dependencies(install_${PROJECT_NAME}
     ${WESTEROS_BASE})
 
@@ -961,6 +1015,19 @@ install(TARGETS westeros_render_gl-shared
     LIBRARY
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     COMPONENT ${PROJECT_NAME})
+
+if (WESTEROS_PLATFORM_RPI)
+install(TARGETS westeros_render_dispmanx
+    ARCHIVE
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    COMPONENT ${PROJECT_NAME})
+
+install(TARGETS westeros_render_dispmanx-shared
+    LIBRARY
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    COMPONENT ${PROJECT_NAME})
+
+endif()
 
 install(TARGETS westeros
     RUNTIME
