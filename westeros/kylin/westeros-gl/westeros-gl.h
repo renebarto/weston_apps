@@ -16,16 +16,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#ifndef _WESTEROS_GL_H
+#define _WESTEROS_GL_H
+#include "config.h"
 
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+/**
+ * Libraries using libdrm must be c libraries.
+ * To ensure we can link with c++ code we use
+ * extern "C" here.
+ */
 typedef struct _WstGLCtx WstGLCtx;
 
-WstGLCtx *  WstGLInit();
-void        WstGLTerm(WstGLCtx * ctx);
-void *      WstGLCreateNativeWindow(WstGLCtx * ctx, int x, int y, int width, int height);
-void        WstGLDestroyNativeWindow(WstGLCtx *ctx, void * nativeWindow);
-bool        WstGLGetNativePixmap(WstGLCtx * ctx, void * nativeBuffer, void ** nativePixmap);
-void        WstGLGetNativePixmapDimensions(WstGLCtx * ctx, void * nativePixmap, int * width, int * height);
-void        WstGLReleaseNativePixmap(WstGLCtx * ctx, void * nativePixmap);
-void *      WstGLGetEGLNativePixmap(WstGLCtx * ctx, void * nativePixmap);
+WstGLCtx* WstGLInit();
+void WstGLTerm( WstGLCtx *ctx );
+void* WstGLCreateNativeWindow( WstGLCtx *ctx, int x, int y, int width, int height );
+void WstGLDestroyNativeWindow( WstGLCtx *ctx, void *nativeWindow );
+bool WstGLGetNativePixmap( WstGLCtx *ctx, void *nativeBuffer, void **nativePixmap );
+void WstGLGetNativePixmapDimensions( WstGLCtx *ctx, void *nativePixmap, int *width, int *height );
+void WstGLReleaseNativePixmap( WstGLCtx *ctx, void *nativePixmap );
+void* WstGLGetEGLNativePixmap( WstGLCtx *ctx, void *nativePixmap );
+
+#if defined(__cplusplus)
+} //extern "C"
+#endif
+#endif
 

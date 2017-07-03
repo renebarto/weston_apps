@@ -45,6 +45,9 @@
 #if defined (WESTEROS_PLATFORM_RPI)
 #include <bcm_host.h>
 #endif
+#if defined (WESTEROS_PLATFORM_KYLIN)
+#include <weston-egl-ext.h>
+#endif
 #include "wayland-egl.h"
 #endif
 

@@ -8,6 +8,20 @@ set(WESTEROS_REQUIRED_VERSION ${WESTEROS_VERSION})
 set(WESTEROS_NAME ${PROJECT_NAME})
 set(WESTEROS_BASE ${WESTEROS_NAME}-${WESTEROS_VERSION})
 
+# TODO remove me later
+message(STATUS "PLATFORM_LIB_INCLUDE_DIR = ${PLATFORM_LIB_INCLUDE_DIR}")
+message(STATUS "PLATFORM_LIB_LIB_DIR = ${PLATFORM_LIB_LIB_DIR}")
+if ("${PLATFORM_LIB_INCLUDE_DIR}" STREQUAL "")
+    set(PLATFORM_LIB_INCLUDE_DIR /home/rene/disk/projects/graphics/buildroot-westeros/output-kylin/staging/usr/include/realtek)
+endif()
+if ("${PLATFORM_LIB_LIB_DIR}" STREQUAL "")
+    set(PLATFORM_LIB_LIB_DIR /home/rene/disk/projects/graphics/buildroot-westeros/output-kylin/staging/usr/lib)
+endif()
+
+if (WESTEROS_PLATFORM_KYLIN)
+    link_directories(${PLATFORM_LIB_LIB_DIR}/server ${PLATFORM_LIB_LIB_DIR} ${PLATFORM_LIB_LIB_DIR}/realtek)
+endif()
+
 # Version for a.o. libwesteros_gl
 set(WESTEROS_DUMMY_VERSION_MAJOR 0)
 set(WESTEROS_DUMMY_VERSION_MINOR 0)
@@ -40,9 +54,14 @@ endif()
 
 include(show_target_properties)
 
-if (${WESTEROS_PLATFORM_KYLIN})
-elseif(${WESTEROS_PLATFORM_RPI})
+if (WESTEROS_PLATFORM_KYLIN)
+    find_package(LibDRM QUIET)
+    find_package(LibGBM QUIET)
+    message(STATUS "Building for Kylin")
+elseif(WESTEROS_PLATFORM_RPI)
+    message(STATUS "Building for RPI")
 else()
+    message(STATUS "Building for Linux")
     find_package(LibDRM QUIET)
     find_package(LibGBM QUIET)
     find_package(LibX11 QUIET)
@@ -95,6 +114,7 @@ endif()
 
 set(WESTEROS_INCLUDES)
 set(WESTEROS_OPENGL_LIBS)
+set(WESTEROS_LINK_OPTIONS)
 
 list(APPEND WESTEROS_INCLUDES
     .
@@ -114,30 +134,57 @@ if (WESTEROS_PLATFORM_RPI)
         westeros_gl)
 elseif (WESTEROS_PLATFORM_KYLIN)
     list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_PLATFORM_KYLIN WESTEROS_PLATFORM_EMBEDDED)
-    list(APPEND WESTEROS_INCLUDES kylin/westeros-gl)
-    list(APPEND WESTEROS_OPENGL_LIBS
+    list(APPEND WESTEROS_INCLUDES 
+        kylin/westeros-gl
+        ${PLATFORM_LIB_INCLUDE_DIR}
+        ${LIBDRM_INCLUDE_DIRS}
+        ${LIBGBM_INCLUDE_DIRS})
+    list(APPEND WESTEROS_LIBS
         mali
-        westeros_gl)
+        maliwlsrv
+        westeros_gl
+        ${LIBDRM_LIBRARIES}
+        )
+    list(APPEND WESTEROS_LINK_OPTIONS
+        -L${PLATFORM_LIB_LIB_DIR}/server
+        -L${PLATFORM_LIB_LIB_DIR}/realtek
+        )
+    # Even though Wayland EGL is supported on Kylin, the extensions needed, and their typedefs, do not exsit
+    # More specifically, eglBindWaylandDisplayWL, eglUnbindWaylandDisplayWL and eglQueryWaylandBufferWL, as well as
+    # their typedefs are missing
+#    set(WAYLAND_EGL_FOUND OFF)
 else()
     list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_PLATFORM_EMBEDDED)
     list(APPEND WESTEROS_INCLUDES
         drm/westeros-gl
         ${LIBDRM_INCLUDE_DIRS}
         ${LIBGBM_INCLUDE_DIRS})
-    list(APPEND WESTEROS_OPENGL_LIBS
+    list(APPEND WESTEROS_LIBS
         westeros_gl
         ${LIBDRM_LIBRARIES}
         ${LIBGBM_LIBRARIES})
 endif()
 
 if (WAYLAND_EGL_FOUND)
-    message(STATUS "Building with Wayland-EGL: ${WAYLAND_EGL_LIBRARIES} ${GLESV2_LIBRARIES}")
-    list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_HAVE_WAYLAND_EGL)
-    set(WESTEROS_EGL_LIBS
-        ${WAYLAND_EGL_LIBRARIES} ${GLESV2_LIBRARIES})
+    if(WESTEROS_PLATFORM_KYLIN)
+        message(STATUS "Building with Wayland-EGL, but for Kylin, with features not used")
+        list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_HAVE_WAYLAND_EGL)
+        set(WESTEROS_EGL_LIBS
+            ${PLATFORM_LIB_LIB_DIR}/server/libEGL.so
+            ${PLATFORM_LIB_LIB_DIR}/server/libGLESv1_CM.so
+            ${PLATFORM_LIB_LIB_DIR}/server/libGLESv2.so
+            wayland-egl
+            )
+    else()
+        message(STATUS "Building with Wayland-EGL: ${WAYLAND_EGL_LIBRARIES} ${GLESV2_LIBRARIES}")
+        list(APPEND WESTEROS_COMPILE_DEFINITIONS WESTEROS_HAVE_WAYLAND_EGL)
+        set(WESTEROS_EGL_LIBS
+            ${WAYLAND_EGL_LIBRARIES} ${GLESV2_LIBRARIES} ${EGL_LIBRARIES})
+    endif()
 else()
+    message(STATUS "Building without Wayland-EGL: ${WAYLAND_EGL_LIBRARIES} ${GLESV2_LIBRARIES}")
     set(WESTEROS_EGL_LIBS
-        westeros_egl)
+        ${GLESV2_LIBRARIES})
 endif()
 
 if(ENABLE_XDG_V4)
@@ -156,109 +203,81 @@ if (ENABLE_WESTEROS_SBPROTOCOL)
     list(APPEND WESTEROS_COMPILE_DEFINITIONS ENABLE_SBPROTOCOL)
 endif()
 
-message(STATUS "WESTEROS_COMPILE_DEFINITIONS: ${WESTEROS_COMPILE_DEFINITIONS}")
-message(STATUS "WESTEROS_INCLUDES           : ${WESTEROS_INCLUDES}")
-message(STATUS "WESTEROS_EGL_LIBS           : ${WESTEROS_EGL_LIBS}")
+message(STATUS "WESTEROS_COMPILE_DEFINITIONS:   ${WESTEROS_COMPILE_DEFINITIONS}")
+message(STATUS "WESTEROS_INCLUDES:              ${WESTEROS_INCLUDES}")
+message(STATUS "WESTEROS_LIBS:                  ${WESTEROS_LIBS}")
+message(STATUS "WESTEROS_LINK_OPTIONS:          ${WESTEROS_LINK_OPTIONS}")
+message(STATUS "WESTEROS_EGL_LIBS               ${WESTEROS_EGL_LIBS}")
 
 
 # Create protocol sources
 # simplebuffer/protocol/simple-buffer.xml
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/simplebuffer/protocol/simplebuffer-client-protocol.h
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} client-header < simplebuffer/protocol/simple-buffer.xml > simplebuffer/protocol/simplebuffer-client-protocol.h
-#    COMMAND $<TARGET_FILE:wayland-scanner> client-header < simplebuffer/protocol/simple-buffer.xml > simplebuffer/protocol/simplebuffer-client-protocol.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/simplebuffer/protocol/simplebuffer-server-protocol.h
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} server-header < simplebuffer/protocol/simple-buffer.xml > simplebuffer/protocol/simplebuffer-server-protocol.h
-#    COMMAND $<TARGET_FILE:wayland-scanner> server-header < simplebuffer/protocol/simple-buffer.xml > simplebuffer/protocol/simplebuffer-server-protocol.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/simplebuffer/protocol/simplebuffer-protocol.c
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} code < simplebuffer/protocol/simple-buffer.xml > simplebuffer/protocol/simplebuffer-protocol.c
-#    COMMAND $<TARGET_FILE:wayland-scanner> code < simplebuffer/protocol/simple-buffer.xml > simplebuffer/protocol/simplebuffer-protocol.c
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 
 # simpleshell/protocol/simple-buffer.xml
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/simpleshell/protocol/simpleshell-client-protocol.h
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} client-header < simpleshell/protocol/simpleshell.xml > simpleshell/protocol/simpleshell-client-protocol.h
-#    COMMAND $<TARGET_FILE:wayland-scanner> client-header < simpleshell/protocol/simpleshell.xml > simpleshell/protocol/simpleshell-client-protocol.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/simpleshell/protocol/simpleshell-server-protocol.h
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} server-header < simpleshell/protocol/simpleshell.xml > simpleshell/protocol/simpleshell-server-protocol.h
-#    COMMAND $<TARGET_FILE:wayland-scanner> server-header < simpleshell/protocol/simpleshell.xml > simpleshell/protocol/simpleshell-server-protocol.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/simpleshell/protocol/simpleshell-protocol.c
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} code < simpleshell/protocol/simpleshell.xml > simpleshell/protocol/simpleshell-protocol.c
-#    COMMAND $<TARGET_FILE:wayland-scanner> code < simpleshell/protocol/simpleshell.xml > simpleshell/protocol/simpleshell-protocol.c
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 
 # version4/xdg-shell.xml
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/version4/xdg-shell-client-protocol.h
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} client-header < protocol/version4/xdg-shell.xml > protocol/version4/xdg-shell-client-protocol.h
-#    COMMAND $<TARGET_FILE:wayland-scanner> client-header < protocol/version4/xdg-shell.xml > protocol/version4/xdg-shell-client-protocol.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/version4/xdg-shell-server-protocol.h
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} server-header < protocol/version4/xdg-shell.xml > protocol/version4/xdg-shell-server-protocol.h
-#    COMMAND $<TARGET_FILE:wayland-scanner> server-header < protocol/version4/xdg-shell.xml > protocol/version4/xdg-shell-server-protocol.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/version4/xdg-shell-protocol.c
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} code < protocol/version4/xdg-shell.xml > protocol/version4/xdg-shell-protocol.c
-#    COMMAND $<TARGET_FILE:wayland-scanner> code < protocol/version4/xdg-shell.xml > protocol/version4/xdg-shell-protocol.c
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 
 # version5/xdg-shell.xml
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/version5/xdg-shell-client-protocol.h
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} client-header < protocol/version5/xdg-shell.xml > protocol/version5/xdg-shell-client-protocol.h
-#    COMMAND $<TARGET_FILE:wayland-scanner> client-header < protocol/version5/xdg-shell.xml > protocol/version5/xdg-shell-client-protocol.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/version5/xdg-shell-server-protocol.h
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} server-header < protocol/version5/xdg-shell.xml > protocol/version5/xdg-shell-server-protocol.h
-#    COMMAND $<TARGET_FILE:wayland-scanner> server-header < protocol/version5/xdg-shell.xml > protocol/version5/xdg-shell-server-protocol.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/version5/xdg-shell-protocol.c
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} code < protocol/version5/xdg-shell.xml > protocol/version5/xdg-shell-protocol.c
-#    COMMAND $<TARGET_FILE:wayland-scanner> code < protocol/version5/xdg-shell.xml > protocol/version5/xdg-shell-protocol.c
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 
 # vpc.xml
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/vpc-client-protocol.h
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} client-header < protocol/vpc.xml > protocol/vpc-client-protocol.h
-#    COMMAND $<TARGET_FILE:wayland-scanner> client-header < protocol/vpc.xml > protocol/vpc-client-protocol.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/vpc-server-protocol.h
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} server-header < protocol/vpc.xml > protocol/vpc-server-protocol.h
-#    COMMAND $<TARGET_FILE:wayland-scanner> server-header < protocol/vpc.xml > protocol/vpc-server-protocol.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/vpc-protocol.c
-#    DEPENDS wayland-protocols-1.7 wayland-scanner
     COMMAND ${WAYLAND_SCANNER_PATH} code < protocol/vpc.xml > protocol/vpc-protocol.c
-#    COMMAND $<TARGET_FILE:wayland-scanner> code < protocol/vpc.xml > protocol/vpc-protocol.c
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM)
 
@@ -288,6 +307,10 @@ set(WESTEROS_SIMPLEBUFFER_CLIENT_INCLUDE_DIRS
 set(WESTEROS_SIMPLEBUFFER_CLIENT_LIBS
     ${WAYLAND_CLIENT_LIBRARIES}
     )
+set(WESTEROS_SIMPLEBUFFER_CLIENT_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_SIMPLEBUFFER_CLIENT_LINK_OPTIONS_LIST WESTEROS_SIMPLEBUFFER_CLIENT_LINK_OPTIONS)
 
 message(STATUS "WESTEROS_SIMPLEBUFFER_CLIENT_INCLUDE_DIRS: ${WESTEROS_SIMPLEBUFFER_CLIENT_INCLUDE_DIRS}")
 message(STATUS "WESTEROS_SIMPLEBUFFER_CLIENT_LIBS: ${WESTEROS_SIMPLEBUFFER_CLIENT_LIBS}")
@@ -308,8 +331,7 @@ target_compile_options(westeros_simplebuffer_client-shared PRIVATE ${WESTEROS_SI
 target_include_directories(westeros_simplebuffer_client-shared PRIVATE ${WESTEROS_SIMPLEBUFFER_CLIENT_INCLUDE_DIRS})
 target_link_libraries(westeros_simplebuffer_client-shared PRIVATE ${WESTEROS_SIMPLEBUFFER_CLIENT_LIBS})
 set_target_properties(westeros_simplebuffer_client-shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(westeros_simplebuffer_client-shared PROPERTIES LINK_FLAGS "${LINK_RPATH}")
-#set_target_properties(westeros_simplebuffer_client-shared PROPERTIES LINK_FLAGS "${LINK_WHOLE_LIB} ${CMAKE_CURRENT_BINARY_DIR}/libshared.a ${LINK_NO_WHOLE_LIB} ${LINK_RPATH}")
+set_target_properties(westeros_simplebuffer_client-shared PROPERTIES LINK_FLAGS "${WESTEROS_SIMPLEBUFFER_CLIENT_LINK_OPTIONS}")
 set_property(TARGET westeros_simplebuffer_client-shared PROPERTY VERSION ${WESTEROS_VERSION_MAJOR}.${WESTEROS_VERSION_MINOR}.${WESTEROS_VERSION_MICRO})
 set_property(TARGET westeros_simplebuffer_client-shared PROPERTY SOVERSION ${WESTEROS_VERSION_MAJOR})
 set_property(TARGET westeros_simplebuffer_client-shared PROPERTY OUTPUT_NAME westeros_simplebuffer_client)
@@ -333,6 +355,11 @@ set(WESTEROS_SIMPLEBUFFER_SERVER_INCLUDE_DIRS
 set(WESTEROS_SIMPLEBUFFER_SERVER_LIBS
     ${WAYLAND_SERVER_LIBRARIES}
     )
+set(WESTEROS_SIMPLEBUFFER_SERVER_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_SIMPLEBUFFER_SERVER_LINK_OPTIONS_LIST WESTEROS_SIMPLEBUFFER_SERVER_LINK_OPTIONS)
+
 message(STATUS "WESTEROS_SIMPLEBUFFER_SERVER_INCLUDE_DIRS: ${WESTEROS_SIMPLEBUFFER_SERVER_INCLUDE_DIRS}")
 message(STATUS "WESTEROS_SIMPLEBUFFER_SERVER_LIBS: ${WESTEROS_SIMPLEBUFFER_SERVER_LIBS}")
 
@@ -352,8 +379,7 @@ target_compile_options(westeros_simplebuffer_server-shared PRIVATE ${WESTEROS_SI
 target_include_directories(westeros_simplebuffer_server-shared PRIVATE ${WESTEROS_SIMPLEBUFFER_SERVER_INCLUDE_DIRS})
 target_link_libraries(westeros_simplebuffer_server-shared PRIVATE ${WESTEROS_SIMPLEBUFFER_SERVER_LIBS})
 set_target_properties(westeros_simplebuffer_server-shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(westeros_simplebuffer_server-shared PROPERTIES LINK_FLAGS "${LINK_RPATH}")
-#set_target_properties(westeros_simplebuffer_server-shared PROPERTIES LINK_FLAGS "${LINK_WHOLE_LIB} ${CMAKE_CURRENT_BINARY_DIR}/libshared.a ${LINK_NO_WHOLE_LIB} ${LINK_RPATH}")
+set_target_properties(westeros_simplebuffer_server-shared PROPERTIES LINK_FLAGS "${WESTEROS_SIMPLEBUFFER_SERVER_LINK_OPTIONS}")
 set_property(TARGET westeros_simplebuffer_server-shared PROPERTY VERSION ${WESTEROS_VERSION_MAJOR}.${WESTEROS_VERSION_MINOR}.${WESTEROS_VERSION_MICRO})
 set_property(TARGET westeros_simplebuffer_server-shared PROPERTY SOVERSION ${WESTEROS_VERSION_MAJOR})
 set_property(TARGET westeros_simplebuffer_server-shared PROPERTY OUTPUT_NAME westeros_simplebuffer_server)
@@ -375,6 +401,11 @@ set(WESTEROS_SIMPLESHELL_CLIENT_INCLUDE_DIRS
 set(WESTEROS_SIMPLESHELL_CLIENT_LIBS
     ${WAYLAND_CLIENT_LIBRARIES}
     )
+set(WESTEROS_SIMPLESHELL_CLIENT_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_SIMPLESHELL_CLIENT_LINK_OPTIONS_LIST WESTEROS_SIMPLESHELL_CLIENT_LINK_OPTIONS)
+
 message(STATUS "WESTEROS_SIMPLESHELL_CLIENT_INCLUDE_DIRS: ${WESTEROS_SIMPLESHELL_CLIENT_INCLUDE_DIRS}")
 message(STATUS "WESTEROS_SIMPLESHELL_CLIENT_LIBS: ${WESTEROS_SIMPLESHELL_CLIENT_LIBS}")
 
@@ -394,8 +425,7 @@ target_compile_options(westeros_simpleshell_client-shared PRIVATE ${WESTEROS_SIM
 target_include_directories(westeros_simpleshell_client-shared PRIVATE ${WESTEROS_SIMPLESHELL_CLIENT_INCLUDE_DIRS})
 target_link_libraries(westeros_simpleshell_client-shared PRIVATE ${WESTEROS_SIMPLESHELL_CLIENT_LIBS})
 set_target_properties(westeros_simpleshell_client-shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(westeros_simpleshell_client-shared PROPERTIES LINK_FLAGS "${LINK_RPATH}")
-#set_target_properties(westeros_simpleshell_client-shared PROPERTIES LINK_FLAGS "${LINK_WHOLE_LIB} ${CMAKE_CURRENT_BINARY_DIR}/libshared.a ${LINK_NO_WHOLE_LIB} ${LINK_RPATH}")
+set_target_properties(westeros_simpleshell_client-shared PROPERTIES LINK_FLAGS "${WESTEROS_SIMPLESHELL_CLIENT_LINK_OPTIONS}")
 set_property(TARGET westeros_simpleshell_client-shared PROPERTY VERSION ${WESTEROS_VERSION_MAJOR}.${WESTEROS_VERSION_MINOR}.${WESTEROS_VERSION_MICRO})
 set_property(TARGET westeros_simpleshell_client-shared PROPERTY SOVERSION ${WESTEROS_VERSION_MAJOR})
 set_property(TARGET westeros_simpleshell_client-shared PROPERTY OUTPUT_NAME westeros_simpleshell_client)
@@ -419,6 +449,11 @@ set(WESTEROS_SIMPLESHELL_SERVER_INCLUDE_DIRS
 set(WESTEROS_SIMPLESHELL_SERVER_LIBS
     ${WAYLAND_SERVER_LIBRARIES}
     )
+set(WESTEROS_SIMPLESHELL_SERVER_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_SIMPLESHELL_SERVER_LINK_OPTIONS_LIST WESTEROS_SIMPLESHELL_SERVER_LINK_OPTIONS)
+
 message(STATUS "WESTEROS_SIMPLESHELL_SERVER_INCLUDE_DIRS: ${WESTEROS_SIMPLESHELL_SERVER_INCLUDE_DIRS}")
 message(STATUS "WESTEROS_SIMPLESHELL_SERVER_LIBS: ${WESTEROS_SIMPLESHELL_SERVER_LIBS}")
 
@@ -438,8 +473,7 @@ target_compile_options(westeros_simpleshell_server-shared PRIVATE ${WESTEROS_SIM
 target_include_directories(westeros_simpleshell_server-shared PRIVATE ${WESTEROS_SIMPLESHELL_SERVER_INCLUDE_DIRS})
 target_link_libraries(westeros_simpleshell_server-shared PRIVATE ${WESTEROS_SIMPLESHELL_SERVER_LIBS})
 set_target_properties(westeros_simpleshell_server-shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(westeros_simpleshell_server-shared PROPERTIES LINK_FLAGS "${LINK_RPATH}")
-#set_target_properties(westeros_simpleshell_server-shared PROPERTIES LINK_FLAGS "${LINK_WHOLE_LIB} ${CMAKE_CURRENT_BINARY_DIR}/libshared.a ${LINK_NO_WHOLE_LIB} ${LINK_RPATH}")
+set_target_properties(westeros_simpleshell_server-shared PROPERTIES LINK_FLAGS "${WESTEROS_SIMPLESHELL_SERVER_LINK_OPTIONS}")
 set_property(TARGET westeros_simpleshell_server-shared PROPERTY VERSION ${WESTEROS_VERSION_MAJOR}.${WESTEROS_VERSION_MINOR}.${WESTEROS_VERSION_MICRO})
 set_property(TARGET westeros_simpleshell_server-shared PROPERTY SOVERSION ${WESTEROS_VERSION_MAJOR})
 set_property(TARGET westeros_simpleshell_server-shared PROPERTY OUTPUT_NAME westeros_simpleshell_server)
@@ -460,6 +494,11 @@ set(WESTEROS_GL_RPI_INCLUDE_DIRS
     )
 set(WESTEROS_GL_RPI_LIBS
     )
+set(WESTEROS_GL_RPI_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_GL_RPI_LINK_OPTIONS_LIST WESTEROS_GL_RPI_LINK_OPTIONS)
+
 message(STATUS "WESTEROS_GL_RPI_COMPILE_DEFINITIONS : ${WESTEROS_GL_RPI_COMPILE_DEFINITIONS}")
 message(STATUS "WESTEROS_GL_RPI_COMPILER_OPTIONS    : ${WESTEROS_GL_RPI_COMPILER_OPTIONS}")
 message(STATUS "WESTEROS_GL_RPI_INCLUDE_DIRS        : ${WESTEROS_GL_RPI_INCLUDE_DIRS}")
@@ -471,7 +510,7 @@ target_compile_options(westeros_gl PRIVATE ${WESTEROS_GL_RPI_COMPILER_OPTIONS})
 target_include_directories(westeros_gl PRIVATE ${WESTEROS_GL_RPI_INCLUDE_DIRS})
 target_link_libraries(westeros_gl PRIVATE ${WESTEROS_GL_RPI_LIBS})
 set_target_properties(westeros_gl PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(westeros_gl PROPERTIES LINK_FLAGS "${LINK_RPATH}")
+set_target_properties(westeros_gl PROPERTIES LINK_FLAGS "${WESTEROS_GL_RPI_LINK_OPTIONS}")
 set_property(TARGET westeros_gl PROPERTY VERSION ${WESTEROS_DUMMY_VERSION_MAJOR}.${WESTEROS_DUMMY_VERSION_MINOR}.${WESTEROS_DUMMY_VERSION_MICRO})
 set_property(TARGET westeros_gl PROPERTY SOVERSION ${WESTEROS_DUMMY_VERSION_MAJOR})
 
@@ -483,13 +522,18 @@ set(WESTEROS_GL_KYLIN_COMPILE_DEFINITIONS
     )
 set(WESTEROS_GL_KYLIN_COMPILER_OPTIONS ${WESTEROS_COMPILER_OPTIONS} -pthread)
 set(WESTEROS_GL_KYLIN_SOURCES
-    kylin/westeros-gl/westeros-gl.cpp
+    kylin/westeros-gl/westeros-gl.c
     kylin/westeros-gl/westeros-gl.h)
 set(WESTEROS_GL_KYLIN_INCLUDE_DIRS
     ${WESTEROS_INCLUDES}
     )
 set(WESTEROS_GL_KYLIN_LIBS
     )
+set(WESTEROS_GL_KYLIN_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_GL_KYLIN_LINK_OPTIONS_LIST WESTEROS_GL_KYLIN_LINK_OPTIONS)
+
 message(STATUS "WESTEROS_GL_KYLIN_COMPILE_DEFINITIONS : ${WESTEROS_GL_KYLIN_COMPILE_DEFINITIONS}")
 message(STATUS "WESTEROS_GL_KYLIN_COMPILER_OPTIONS    : ${WESTEROS_GL_KYLIN_COMPILER_OPTIONS}")
 message(STATUS "WESTEROS_GL_KYLIN_INCLUDE_DIRS        : ${WESTEROS_GL_KYLIN_INCLUDE_DIRS}")
@@ -501,7 +545,7 @@ target_compile_options(westeros_gl PRIVATE ${WESTEROS_GL_KYLIN_COMPILER_OPTIONS}
 target_include_directories(westeros_gl PRIVATE ${WESTEROS_GL_KYLIN_INCLUDE_DIRS})
 target_link_libraries(westeros_gl PRIVATE ${WESTEROS_GL_KYLIN_LIBS})
 set_target_properties(westeros_gl PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(westeros_gl PROPERTIES LINK_FLAGS "${LINK_RPATH}")
+set_target_properties(westeros_gl PROPERTIES LINK_FLAGS "${WESTEROS_GL_KYLIN_LINK_OPTIONS}")
 set_property(TARGET westeros_gl PROPERTY VERSION ${WESTEROS_DUMMY_VERSION_MAJOR}.${WESTEROS_DUMMY_VERSION_MINOR}.${WESTEROS_DUMMY_VERSION_MICRO})
 set_property(TARGET westeros_gl PROPERTY SOVERSION ${WESTEROS_DUMMY_VERSION_MAJOR})
 
@@ -520,6 +564,11 @@ set(WESTEROS_GL_DRM_INCLUDE_DIRS
     )
 set(WESTEROS_GL_DRM_LIBS
     )
+set(WESTEROS_GL_DRM_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_GL_DRM_LINK_OPTIONS_LIST WESTEROS_GL_DRM_LINK_OPTIONS)
+
 message(STATUS "WESTEROS_GL_DRM_COMPILE_DEFINITIONS : ${WESTEROS_GL_DRM_COMPILE_DEFINITIONS}")
 message(STATUS "WESTEROS_GL_DRM_COMPILER_OPTIONS    : ${WESTEROS_GL_DRM_COMPILER_OPTIONS}")
 message(STATUS "WESTEROS_GL_DRM_INCLUDE_DIRS        : ${WESTEROS_GL_DRM_INCLUDE_DIRS}")
@@ -531,7 +580,7 @@ target_compile_options(westeros_gl PRIVATE ${WESTEROS_GL_DRM_COMPILER_OPTIONS})
 target_include_directories(westeros_gl PRIVATE ${WESTEROS_GL_DRM_INCLUDE_DIRS})
 target_link_libraries(westeros_gl PRIVATE ${WESTEROS_GL_DRM_LIBS})
 set_target_properties(westeros_gl PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(westeros_gl PROPERTIES LINK_FLAGS "${LINK_RPATH}")
+set_target_properties(westeros_gl PROPERTIES LINK_FLAGS "${WESTEROS_GL_DRM_LINK_OPTIONS}")
 set_property(TARGET westeros_gl PROPERTY VERSION ${WESTEROS_DUMMY_VERSION_MAJOR}.${WESTEROS_DUMMY_VERSION_MINOR}.${WESTEROS_DUMMY_VERSION_MICRO})
 set_property(TARGET westeros_gl PROPERTY SOVERSION ${WESTEROS_DUMMY_VERSION_MAJOR})
 
@@ -552,11 +601,14 @@ set(WESTEROS_RENDER_GL_INCLUDE_DIRS
     )
 set(WESTEROS_RENDER_GL_LIBS
     ${WESTEROS_EGL_LIBS}
-    ${EGL_LIBRARIES}
-    ${WESTEROS_OPENGL_LIBS}
+    ${WESTEROS_LIBS}
     ${WAYLAND_SERVER_LIBRARIES}
     westeros_simplebuffer_server
     )
+set(WESTEROS_RENDER_GL_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_RENDER_GL_LINK_OPTIONS_LIST WESTEROS_RENDER_GL_LINK_OPTIONS)
 
 message(STATUS "WESTEROS_RENDER_GL_COMPILE_DEFINITIONS  : ${WESTEROS_RENDER_GL_COMPILE_DEFINITIONS}")
 message(STATUS "WESTEROS_RENDER_GL_COMPILER_OPTIONS     : ${WESTEROS_RENDER_GL_COMPILER_OPTIONS}")
@@ -579,7 +631,7 @@ target_compile_options(westeros_render_gl-shared PRIVATE ${WESTEROS_RENDER_GL_CO
 target_include_directories(westeros_render_gl-shared PRIVATE ${WESTEROS_RENDER_GL_INCLUDE_DIRS})
 target_link_libraries(westeros_render_gl-shared PRIVATE ${WESTEROS_RENDER_GL_LIBS})
 set_target_properties(westeros_render_gl-shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(westeros_render_gl-shared PROPERTIES LINK_FLAGS "${LINK_RPATH}")
+set_target_properties(westeros_render_gl-shared PROPERTIES LINK_FLAGS "${WESTEROS_RENDER_GL_LINK_OPTIONS}")
 set_property(TARGET westeros_render_gl-shared PROPERTY VERSION ${WESTEROS_VERSION_MAJOR}.${WESTEROS_VERSION_MINOR}.${WESTEROS_VERSION_MICRO})
 set_property(TARGET westeros_render_gl-shared PROPERTY SOVERSION ${WESTEROS_VERSION_MAJOR})
 set_property(TARGET westeros_render_gl-shared PROPERTY OUTPUT_NAME westeros_render_gl)
@@ -599,11 +651,14 @@ set(WESTEROS_RENDER_EMBEDDED_INCLUDE_DIRS
     )
 set(WESTEROS_RENDER_EMBEDDED_LIBS
     ${WESTEROS_EGL_LIBS}
-    ${EGL_LIBRARIES}
-    ${WESTEROS_OPENGL_LIBS}
+    ${WESTEROS_LIBS}
     ${WAYLAND_SERVER_LIBRARIES}
     westeros_simplebuffer_server
     )
+set(WESTEROS_RENDER_EMBEDDED_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_RENDER_EMBEDDED_LINK_OPTIONS_LIST WESTEROS_RENDER_EMBEDDED_LINK_OPTIONS)
 
 message(STATUS "WESTEROS_RENDER_EMBEDDED_COMPILE_DEFINITIONS: ${WESTEROS_RENDER_EMBEDDED_COMPILE_DEFINITIONS}")
 message(STATUS "WESTEROS_RENDER_EMBEDDED_COMPILER_OPTIONS   : ${WESTEROS_RENDER_EMBEDDED_COMPILER_OPTIONS}")
@@ -626,7 +681,7 @@ target_compile_options(westeros_render_embedded-shared PRIVATE ${WESTEROS_RENDER
 target_include_directories(westeros_render_embedded-shared PRIVATE ${WESTEROS_RENDER_EMBEDDED_INCLUDE_DIRS})
 target_link_libraries(westeros_render_embedded-shared PRIVATE ${WESTEROS_RENDER_EMBEDDED_LIBS})
 set_target_properties(westeros_render_embedded-shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(westeros_render_embedded-shared PROPERTIES LINK_FLAGS "${LINK_RPATH}")
+set_target_properties(westeros_render_embedded-shared PROPERTIES LINK_FLAGS "${WESTEROS_RENDER_EMBEDDED_LINK_OPTIONS}")
 set_property(TARGET westeros_render_embedded-shared PROPERTY VERSION ${WESTEROS_VERSION_MAJOR}.${WESTEROS_VERSION_MINOR}.${WESTEROS_VERSION_MICRO})
 set_property(TARGET westeros_render_embedded-shared PROPERTY SOVERSION ${WESTEROS_VERSION_MAJOR})
 set_property(TARGET westeros_render_embedded-shared PROPERTY OUTPUT_NAME westeros_render_embedded)
@@ -647,11 +702,15 @@ set(WESTEROS_RENDER_DISPMANX_INCLUDE_DIRS
     )
 set(WESTEROS_RENDER_DISPMANX_LIBS
     ${WESTEROS_EGL_LIBS}
-    ${EGL_LIBRARIES}
-    ${WESTEROS_OPENGL_LIBS}
+    ${WESTEROS_LIBS}
     ${WAYLAND_SERVER_LIBRARIES}
     westeros_simplebuffer_server
     )
+set(WESTEROS_RENDER_DISPMANX_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_RENDER_DISPMANX_LINK_OPTIONS_LIST WESTEROS_RENDER_DISPMANX_LINK_OPTIONS)
+
 message(STATUS "WESTEROS_RENDER_DISPMANX_COMPILE_DEFINITIONS : ${WESTEROS_RENDER_DISPMANX_COMPILE_DEFINITIONS}")
 message(STATUS "WESTEROS_RENDER_DISPMANX_COMPILER_OPTIONS    : ${WESTEROS_RENDER_DISPMANX_COMPILER_OPTIONS}")
 message(STATUS "WESTEROS_RENDER_DISPMANX_INCLUDE_DIRS        : ${WESTEROS_RENDER_DISPMANX_INCLUDE_DIRS}")
@@ -673,7 +732,7 @@ target_compile_options(westeros_render_dispmanx-shared PRIVATE ${WESTEROS_RENDER
 target_include_directories(westeros_render_dispmanx-shared PRIVATE ${WESTEROS_RENDER_DISPMANX_INCLUDE_DIRS})
 target_link_libraries(westeros_render_dispmanx-shared PRIVATE ${WESTEROS_RENDER_DISPMANX_LIBS})
 set_target_properties(westeros_render_dispmanx-shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(westeros_render_dispmanx-shared PROPERTIES LINK_FLAGS "${LINK_RPATH}")
+set_target_properties(westeros_render_dispmanx-shared PROPERTIES LINK_FLAGS "${WESTEROS_RENDER_DISPMANX_LINK_OPTIONS}")
 set_property(TARGET westeros_render_dispmanx-shared PROPERTY VERSION ${WESTEROS_VERSION_MAJOR}.${WESTEROS_VERSION_MINOR}.${WESTEROS_VERSION_MICRO})
 set_property(TARGET westeros_render_dispmanx-shared PROPERTY SOVERSION ${WESTEROS_VERSION_MAJOR})
 set_property(TARGET westeros_render_dispmanx-shared PROPERTY OUTPUT_NAME westeros_render_dispmanx)
@@ -713,6 +772,11 @@ set(WESTEROS_COMPOSITOR_LIBS
     dl
     westeros_simplebuffer_server
     )
+set(WESTEROS_COMPOSITOR_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_COMPOSITOR_LINK_OPTIONS_LIST WESTEROS_COMPOSITOR_LINK_OPTIONS)
+
 message(STATUS "WESTEROS_COMPOSITOR_COMPILE_DEFINITIONS : ${WESTEROS_COMPOSITOR_COMPILE_DEFINITIONS}")
 message(STATUS "WESTEROS_COMPOSITOR_COMPILER_OPTIONS    : ${WESTEROS_COMPOSITOR_COMPILER_OPTIONS}")
 message(STATUS "WESTEROS_COMPOSITOR_INCLUDE_DIRS        : ${WESTEROS_COMPOSITOR_INCLUDE_DIRS}")
@@ -734,8 +798,7 @@ target_compile_options(westeros_compositor-shared PRIVATE ${WESTEROS_COMPOSITOR_
 target_include_directories(westeros_compositor-shared PRIVATE ${WESTEROS_COMPOSITOR_INCLUDE_DIRS})
 target_link_libraries(westeros_compositor-shared PRIVATE ${WESTEROS_COMPOSITOR_LIBS})
 set_target_properties(westeros_compositor-shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(westeros_compositor-shared PROPERTIES LINK_FLAGS "${LINK_RPATH}")
-#set_target_properties(westeros_compositor-shared PROPERTIES LINK_FLAGS "${LINK_WHOLE_LIB} ${CMAKE_CURRENT_BINARY_DIR}/libshared.a ${LINK_NO_WHOLE_LIB} ${LINK_RPATH}")
+set_target_properties(westeros_compositor-shared PROPERTIES LINK_FLAGS "${WESTEROS_COMPOSITOR_LINK_OPTIONS}")
 set_property(TARGET westeros_compositor-shared PROPERTY VERSION ${WESTEROS_VERSION_MAJOR}.${WESTEROS_VERSION_MINOR}.${WESTEROS_VERSION_MICRO})
 set_property(TARGET westeros_compositor-shared PROPERTY SOVERSION ${WESTEROS_VERSION_MAJOR})
 set_property(TARGET westeros_compositor-shared PROPERTY OUTPUT_NAME westeros_compositor)
@@ -758,12 +821,15 @@ set(WESTEROS_APP_LIBS
     ${WAYLAND_SERVER_LIBRARIES}
     westeros_compositor
     ${LIBX11_LIBRARIES}
-    ${EGL_LIBRARIES}
-    ${GLESV2_LIBRARIES}
     ${WESTEROS_EGL_LIBS}
-    ${WESTEROS_OPENGL_LIBS}
+    ${WESTEROS_LIBS}
     ${LIBXKBCOMMON_LIBRARIES}
     )
+set(WESTEROS_APP_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_APP_LINK_OPTIONS_LIST WESTEROS_APP_LINK_OPTIONS)
+
 message(STATUS "WESTEROS_APP_COMPILE_DEFINITIONS: ${WESTEROS_APP_COMPILE_DEFINITIONS}")
 message(STATUS "WESTEROS_APP_COMPILER_OPTIONS   : ${WESTEROS_APP_COMPILER_OPTIONS}")
 message(STATUS "WESTEROS_APP_INCLUDE_DIRS       : ${WESTEROS_APP_INCLUDE_DIRS}")
@@ -776,7 +842,7 @@ target_include_directories(westeros PRIVATE ${WESTEROS_APP_INCLUDE_DIRS})
 target_link_libraries(westeros PRIVATE ${WESTEROS_APP_LIBS})
 set_target_properties(westeros PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(westeros PROPERTIES RUNTIME_OUTPUT_NAME westeros-${WESTEROS_VERSION})
-set_target_properties(westeros PROPERTIES LINK_FLAGS "${LINK_RPATH}")
+set_target_properties(westeros PROPERTIES LINK_FLAGS "${WESTEROS_APP_LINK_OPTIONS}")
 
 show_target_properties(westeros)
 
@@ -796,8 +862,13 @@ set(WESTEROS_PLAYER_LIBS
     ${GSTREAMER_LIBRARIES}
     ${WAYLAND_CLIENT_LIBRARIES}
     ${WESTEROS_EGL_LIBS}
-    ${EGL_LIBRARIES}
+    ${WESTEROS_LIBS}
     )
+set(WESTEROS_PLAYER_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_PLAYER_LINK_OPTIONS_LIST WESTEROS_PLAYER_LINK_OPTIONS)
+
 message(STATUS "WESTEROS_PLAYER_COMPILE_DEFINITIONS : ${WESTEROS_PLAYER_COMPILE_DEFINITIONS}")
 message(STATUS "WESTEROS_PLAYER_COMPILER_OPTIONS    : ${WESTEROS_PLAYER_COMPILER_OPTIONS}")
 message(STATUS "WESTEROS_PLAYER_INCLUDE_DIRS        : ${WESTEROS_PLAYER_INCLUDE_DIRS}")
@@ -810,7 +881,7 @@ target_include_directories(westeros_player PRIVATE ${WESTEROS_PLAYER_INCLUDE_DIR
 target_link_libraries(westeros_player PRIVATE ${WESTEROS_PLAYER_LIBS})
 set_target_properties(westeros_player PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(westeros_player PROPERTIES RUNTIME_OUTPUT_NAME westeros_player-${WESTEROS_VERSION})
-set_target_properties(westeros_player PROPERTIES LINK_FLAGS "${LINK_RPATH}")
+set_target_properties(westeros_player PROPERTIES LINK_FLAGS "${WESTEROS_PLAYER_LINK_OPTIONS}")
 
 show_target_properties(westeros_player)
 
@@ -831,11 +902,14 @@ set(WESTEROS_TEST_LIBS
     ${WAYLAND_CLIENT_LIBRARIES}
     westeros_simpleshell_client
     ${WESTEROS_EGL_LIBS}
-    ${EGL_LIBRARIES}
-#    ${OPENGL_LIBRARIES}
-#    ${GLEW_LIBRARIES}
+    ${WESTEROS_LIBS}
     ${LIBXKBCOMMON_LIBRARIES}
     )
+set(WESTEROS_TEST_LINK_OPTIONS_LIST
+    ${WESTEROS_LINK_OPTIONS}
+    ${LINK_RPATH})
+list_to_string(WESTEROS_TEST_LINK_OPTIONS_LIST WESTEROS_TEST_LINK_OPTIONS)
+
 message(STATUS "WESTEROS_TEST_INCLUDE_DIRS: ${WESTEROS_TEST_INCLUDE_DIRS}")
 message(STATUS "WESTEROS_TEST_LIBS: ${WESTEROS_TEST_LIBS}")
 
@@ -846,7 +920,7 @@ target_include_directories(westeros_test PRIVATE ${WESTEROS_TEST_INCLUDE_DIRS})
 target_link_libraries(westeros_test PRIVATE ${WESTEROS_TEST_LIBS})
 set_target_properties(westeros_test PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(westeros_test PROPERTIES RUNTIME_OUTPUT_NAME westeros_test-${WESTEROS_VERSION})
-set_target_properties(westeros_test PROPERTIES LINK_FLAGS "${LINK_RPATH}")
+set_target_properties(westeros_test PROPERTIES LINK_FLAGS "${WESTEROS_TEST_LINK_OPTIONS}")
 
 show_target_properties(westeros_test)
 
