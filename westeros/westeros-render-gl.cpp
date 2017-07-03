@@ -1119,174 +1119,180 @@ static void wstRendererGLRenderSurface( WstRendererGL *renderer, WstRenderSurfac
 #define ALPHA_SIZE (8)
 #define DEPTH_SIZE (0)
 
-static bool wstRendererGLSetupEGL( WstRendererGL *renderer )
+static bool wstRendererGLSetupEGL(WstRendererGL *renderer)
 {
-   bool result= false;
-   EGLint major, minor;
-   EGLBoolean b;
-   EGLint configCount;
-   EGLConfig *eglConfigs= 0;
-   EGLint attr[32];
-   EGLint redSize, greenSize, blueSize, alphaSize, depthSize;
-   EGLint ctxAttrib[3];
-   int i;
-   
-   if ( renderer->renderer->displayNested )
-   {
-      // Get EGL display from wayland display
-      renderer->eglDisplay= eglGetDisplay( (EGLNativeDisplayType)renderer->renderer->displayNested );
-   }
-   else
-   {
-      // Get default EGL display
-      renderer->eglDisplay= eglGetDisplay(EGL_DEFAULT_DISPLAY);
-   }
-   printf("wstRendererGLSetupEGL: eglDisplay=%p\n", renderer->eglDisplay );
-   if ( renderer->eglDisplay == EGL_NO_DISPLAY )
-   {
-      printf("wstRendererGLSetupEGL: EGL not available\n" );
-      goto exit;
-   }
+    bool result = false;
+    EGLint major, minor;
+    EGLBoolean b;
+    EGLint configCount;
+    EGLConfig *eglConfigs = 0;
+    EGLint attr[32];
+    EGLint redSize, greenSize, blueSize, alphaSize, depthSize;
+    EGLint ctxAttrib[3];
+    int i;
 
-   // Initialize display
-   b= eglInitialize( renderer->eglDisplay, &major, &minor );
-   if ( !b )
-   {
-      printf("wstRendererGLSetupEGL: unable to initialize EGL display\n" );
-      goto exit;
-   }
-   printf("wstRendererGLSetupEGL: eglInitiialize: major: %d minor: %d\n", major, minor );
+    if (renderer->renderer->displayNested)
+    {
+        // Get EGL display from wayland display
+        renderer->eglDisplay = eglGetDisplay((EGLNativeDisplayType) renderer->renderer->displayNested);
+    } else
+    {
+#ifdef WESTEROS_PLATFORM_KYLIN
+        printf("wstRendererGLSetupEGL: Kylin variant, using wl_display");
+        renderer->eglDisplay = eglGetDisplay((EGLNativeDisplayType) renderer->renderer->display);
+#else
+        // Get default EGL display
+        renderer->eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+#endif
+    }
+    printf("wstRendererGLSetupEGL: eglDisplay=%p\n", renderer->eglDisplay);
+    if (renderer->eglDisplay == EGL_NO_DISPLAY)
+    {
+        printf("wstRendererGLSetupEGL: EGL not available\n");
+        goto exit;
+    }
 
-   // Get number of available configurations
-   b= eglGetConfigs( renderer->eglDisplay, NULL, 0, &configCount );
-   if ( !b )
-   {
-      printf("wstRendererGLSetupEGL: unable to get count of EGL configurations: %X\n", eglGetError() );
-      goto exit;
-   }
-   printf("wstRendererGLSetupEGL: Number of EGL configurations: %d\n", configCount );
-    
-   eglConfigs= (EGLConfig*)malloc( configCount*sizeof(EGLConfig) );
-   if ( !eglConfigs )
-   {
-      printf("wstRendererGLSetupEGL: unable to alloc memory for EGL configurations\n");
-      goto exit;
-   }
+    // Initialize display
+    b = eglInitialize(renderer->eglDisplay, &major, &minor);
+    if (!b)
+    {
+        printf("wstRendererGLSetupEGL: unable to initialize EGL display\n");
+        goto exit;
+    }
+    printf("wstRendererGLSetupEGL: eglInitiialize: major: %d minor: %d\n", major, minor);
 
-   i= 0;
-   attr[i++]= EGL_RED_SIZE;
-   attr[i++]= RED_SIZE;
-   attr[i++]= EGL_GREEN_SIZE;
-   attr[i++]= GREEN_SIZE;
-   attr[i++]= EGL_BLUE_SIZE;
-   attr[i++]= BLUE_SIZE;
-   attr[i++]= EGL_DEPTH_SIZE;
-   attr[i++]= DEPTH_SIZE;
-   attr[i++]= EGL_STENCIL_SIZE;
-   attr[i++]= 0;
-   attr[i++]= EGL_SURFACE_TYPE;
-   attr[i++]= EGL_WINDOW_BIT;
-   attr[i++]= EGL_RENDERABLE_TYPE;
-   attr[i++]= EGL_OPENGL_ES2_BIT;
-   attr[i++]= EGL_NONE;
-    
-   // Get a list of configurations that meet or exceed our requirements
-   b= eglChooseConfig( renderer->eglDisplay, attr, eglConfigs, configCount, &configCount );
-   if ( !b )
-   {
-      printf("wstRendererGLSetupEGL: eglChooseConfig failed: %X\n", eglGetError() );
-      goto exit;
-   }
-   printf("wstRendererGLSetupEGL: eglChooseConfig: matching configurations: %d\n", configCount );
-    
-   // Choose a suitable configuration
-   for( i= 0; i < configCount; ++i )
-   {
-      eglGetConfigAttrib( renderer->eglDisplay, eglConfigs[i], EGL_RED_SIZE, &redSize );
-      eglGetConfigAttrib( renderer->eglDisplay, eglConfigs[i], EGL_GREEN_SIZE, &greenSize );
-      eglGetConfigAttrib( renderer->eglDisplay, eglConfigs[i], EGL_BLUE_SIZE, &blueSize );
-      eglGetConfigAttrib( renderer->eglDisplay, eglConfigs[i], EGL_ALPHA_SIZE, &alphaSize );
-      eglGetConfigAttrib( renderer->eglDisplay, eglConfigs[i], EGL_DEPTH_SIZE, &depthSize );
+    // Get number of available configurations
+    b = eglGetConfigs(renderer->eglDisplay, NULL, 0, &configCount);
+    if (!b)
+    {
+        printf("wstRendererGLSetupEGL: unable to get count of EGL configurations: %X\n", eglGetError());
+        goto exit;
+    }
+    printf("wstRendererGLSetupEGL: Number of EGL configurations: %d\n", configCount);
 
-      printf("config %d: red: %d green: %d blue: %d alpha: %d depth: %d\n",
-              i, redSize, greenSize, blueSize, alphaSize, depthSize );
-      if ( (redSize == RED_SIZE) &&
-           (greenSize == GREEN_SIZE) &&
-           (blueSize == BLUE_SIZE) &&
-           (alphaSize == ALPHA_SIZE) &&
-           (depthSize >= DEPTH_SIZE) )
-      {
-         printf( "choosing config %d\n", i);
-         break;
-      }
-   }
-   if ( i == configCount )
-   {
-      printf("wstRendererGLSetupEGL: no suitable configuration available\n");
-      goto exit;
-   }
-   renderer->eglConfig= eglConfigs[i];
+    eglConfigs = (EGLConfig *) malloc(configCount * sizeof(EGLConfig));
+    if (!eglConfigs)
+    {
+        printf("wstRendererGLSetupEGL: unable to alloc memory for EGL configurations\n");
+        goto exit;
+    }
 
-   // If we are doing nested composition, create a wayland egl window otherwise
-   // create a native egl window.
-   if ( renderer->renderer->displayNested )
-   {
-      renderer->nativeWindow= wl_egl_window_create(renderer->renderer->surfaceNested, renderer->outputWidth, renderer->outputHeight);         
-   }
-   #if defined (WESTEROS_PLATFORM_EMBEDDED)
-   else
-   {
-      renderer->nativeWindow= WstGLCreateNativeWindow( renderer->glCtx, 0, 0, renderer->outputWidth, renderer->outputHeight );
-   }
-   #else
-   else
-   {
-      renderer->nativeWindow= renderer->renderer->nativeWindow;
-   }
-   #endif
-   printf("nativeWindow %p\n", renderer->nativeWindow );
+    i = 0;
+    attr[i++] = EGL_RED_SIZE;
+    attr[i++] = RED_SIZE;
+    attr[i++] = EGL_GREEN_SIZE;
+    attr[i++] = GREEN_SIZE;
+    attr[i++] = EGL_BLUE_SIZE;
+    attr[i++] = BLUE_SIZE;
+    attr[i++] = EGL_DEPTH_SIZE;
+    attr[i++] = DEPTH_SIZE;
+    attr[i++] = EGL_STENCIL_SIZE;
+    attr[i++] = 0;
+    attr[i++] = EGL_SURFACE_TYPE;
+    attr[i++] = EGL_WINDOW_BIT;
+    attr[i++] = EGL_RENDERABLE_TYPE;
+    attr[i++] = EGL_OPENGL_ES2_BIT;
+    attr[i++] = EGL_NONE;
 
-   #ifndef WESTEROS_PLATFORM_QEMUX86
-   if ( renderer->nativeWindow )
-   #endif
-   {
-      // Create an EGL window surface
-      renderer->eglSurface= eglCreateWindowSurface( renderer->eglDisplay, 
-                                                    renderer->eglConfig, 
-                                                    (EGLNativeWindowType)renderer->nativeWindow,
-                                                    NULL );
-      printf("wstRendererGLSetupEGL: eglSurface %p\n", renderer->eglSurface );
-   }
+    // Get a list of configurations that meet or exceed our requirements
+    b = eglChooseConfig(renderer->eglDisplay, attr, eglConfigs, configCount, &configCount);
+    if (!b)
+    {
+        printf("wstRendererGLSetupEGL: eglChooseConfig failed: %X\n", eglGetError());
+        goto exit;
+    }
+    printf("wstRendererGLSetupEGL: eglChooseConfig: matching configurations: %d\n", configCount);
 
-   ctxAttrib[0]= EGL_CONTEXT_CLIENT_VERSION;
-   ctxAttrib[1]= 2; // ES2
-   ctxAttrib[2]= EGL_NONE;
+    // Choose a suitable configuration
+    for (i = 0; i < configCount; ++i)
+    {
+        eglGetConfigAttrib(renderer->eglDisplay, eglConfigs[i], EGL_RED_SIZE, &redSize);
+        eglGetConfigAttrib(renderer->eglDisplay, eglConfigs[i], EGL_GREEN_SIZE, &greenSize);
+        eglGetConfigAttrib(renderer->eglDisplay, eglConfigs[i], EGL_BLUE_SIZE, &blueSize);
+        eglGetConfigAttrib(renderer->eglDisplay, eglConfigs[i], EGL_ALPHA_SIZE, &alphaSize);
+        eglGetConfigAttrib(renderer->eglDisplay, eglConfigs[i], EGL_DEPTH_SIZE, &depthSize);
 
-   // Create an EGL context
-   renderer->eglContext= eglCreateContext( renderer->eglDisplay, renderer->eglConfig, EGL_NO_CONTEXT, ctxAttrib );
-   if ( renderer->eglContext == EGL_NO_CONTEXT )
-   {
-      printf( "wstRendererGLSetupEGL: eglCreateContext failed: %X\n", eglGetError() );
-      goto exit;
-   }
-   printf("wstRendererGLSetupEGL: eglContext %p\n", renderer->eglContext );
+        printf("config %d: red: %d green: %d blue: %d alpha: %d depth: %d\n",
+               i, redSize, greenSize, blueSize, alphaSize, depthSize);
+        if ((redSize == RED_SIZE) &&
+            (greenSize == GREEN_SIZE) &&
+            (blueSize == BLUE_SIZE) &&
+            (alphaSize == ALPHA_SIZE) &&
+            (depthSize >= DEPTH_SIZE))
+        {
+            printf("choosing config %d\n", i);
+            break;
+        }
+    }
+    if (i == configCount)
+    {
+        printf("wstRendererGLSetupEGL: no suitable configuration available\n");
+        goto exit;
+    }
+    renderer->eglConfig = eglConfigs[i];
 
-   eglMakeCurrent( renderer->eglDisplay, renderer->eglSurface, renderer->eglSurface, renderer->eglContext );
-   
-   eglSwapInterval( renderer->eglDisplay, 1 );
-   
-   result= true;
+    // If we are doing nested composition, create a wayland egl window otherwise
+    // create a native egl window.
+    if (renderer->renderer->displayNested)
+    {
+        renderer->nativeWindow = wl_egl_window_create(renderer->renderer->surfaceNested, renderer->outputWidth,
+                                                      renderer->outputHeight);
+    }
+#if defined (WESTEROS_PLATFORM_EMBEDDED)
+    else
+    {
+        renderer->nativeWindow = WstGLCreateNativeWindow(renderer->glCtx, 0, 0, renderer->outputWidth,
+                                                         renderer->outputHeight);
+    }
+#else
+    else
+    {
+       renderer->nativeWindow= renderer->renderer->nativeWindow;
+    }
+#endif
+    printf("nativeWindow %p\n", renderer->nativeWindow);
 
-exit:
+#ifndef WESTEROS_PLATFORM_QEMUX86
+    if (renderer->nativeWindow)
+#endif
+    {
+        // Create an EGL window surface
+        renderer->eglSurface = eglCreateWindowSurface(renderer->eglDisplay,
+                                                      renderer->eglConfig,
+                                                      (EGLNativeWindowType) renderer->nativeWindow,
+                                                      NULL);
+        printf("wstRendererGLSetupEGL: eglSurface %p\n", renderer->eglSurface);
+    }
 
-   if ( eglConfigs )
-   {
-      //Crashes in free sometimes.  Why?
-      //free( eglConfigs );
-      eglConfigs= 0;
-   }
+    ctxAttrib[0] = EGL_CONTEXT_CLIENT_VERSION;
+    ctxAttrib[1] = 2; // ES2
+    ctxAttrib[2] = EGL_NONE;
 
-   return result;
+    // Create an EGL context
+    renderer->eglContext = eglCreateContext(renderer->eglDisplay, renderer->eglConfig, EGL_NO_CONTEXT, ctxAttrib);
+    if (renderer->eglContext == EGL_NO_CONTEXT)
+    {
+        printf("wstRendererGLSetupEGL: eglCreateContext failed: %X\n", eglGetError());
+        goto exit;
+    }
+    printf("wstRendererGLSetupEGL: eglContext %p\n", renderer->eglContext);
+
+    eglMakeCurrent(renderer->eglDisplay, renderer->eglSurface, renderer->eglSurface, renderer->eglContext);
+
+    eglSwapInterval(renderer->eglDisplay, 1);
+
+    result = true;
+
+    exit:
+
+    if (eglConfigs)
+    {
+        //Crashes in free sometimes.  Why?
+        //free( eglConfigs );
+        eglConfigs = 0;
+    }
+
+    return result;
 }
 
 static WstShader* wstRendererGLCreateShader( bool yuv )

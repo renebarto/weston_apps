@@ -217,7 +217,7 @@ EGLAPI EGLBoolean eglSwapBuffers( EGLDisplay dpy, EGLSurface surface )
 
 WstGLCtx* WstGLInit()
 {
-    printf("Initialize westeros_gl-drm\n");
+    printf("Initialize westeros_gl-kylin\n");
     /*
      *  Establish the overloading of a subset of EGL methods
      */
