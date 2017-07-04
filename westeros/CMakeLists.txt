@@ -978,10 +978,12 @@ configure_file(
 
 add_custom_target(uninstall_${PROJECT_NAME}
     COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${PROJECT_NAME} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake
+    DEPENDS ${PROJECT_NAME}
     COMMENT "Uninstalling ${PROJECT_NAME}")
 
 add_custom_target(install_${PROJECT_NAME}
     COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${PROJECT_NAME} -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+    DEPENDS ${PROJECT_NAME}
     COMMENT "Installing ${PROJECT_NAME}")
 
 add_dependencies(install-components install_${PROJECT_NAME})
