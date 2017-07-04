@@ -26,28 +26,8 @@ else()
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING
         "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
-if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-    set(CONFIG_DIR "debug" CACHE STRING "Build config directory" FORCE)
-elseif(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-    set(CONFIG_DIR "release" CACHE STRING "Build config directory" FORCE)
-elseif(${CMAKE_BUILD_TYPE} STREQUAL "MinSizeRel")
-    set(CONFIG_DIR "releaseMinSize" CACHE STRING "Build config directory" FORCE)
-elseif(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
-    set(CONFIG_DIR "releaseMinSize" CACHE STRING "Build config directory" FORCE)
-else()
-    message(FATAL_ERROR "Invalid build type: " ${CMAKE_BUILD_TYPE})
-endif()
 
-#set(BUILD_BASE_DIR ${CMAKE_SOURCE_DIR}/build CACHE STRING
-#    "Build root directory.")
-#set(CMAKE_BINARY_DIR ${BUILD_BASE_DIR}/${CONFIG_DIR} CACHE STRING
-#    "Build directory.")
-#message(STATUS "Build base directory: " ${BUILD_BASE_DIR})
 message(STATUS "Build config directory: " ${CMAKE_BINARY_DIR})
-
-#set(OUTPUT_BASE_DIR ${CMAKE_SOURCE_DIR}/output)
-#message(STATUS "Output base directory: " ${OUTPUT_BASE_DIR})
-
 message(STATUS "Sytem root  directory: " ${CMAKE_SYSROOT})
 message(STATUS "Install prefix       : " ${CMAKE_INSTALL_PREFIX})
 set(CMAKE_PROGRAM_PATH ${CMAKE_INSTALL_PREFIX}/bin)
@@ -58,8 +38,6 @@ set(CMAKE_INCLUDE_PATH ${CMAKE_INSTALL_PREFIX}/include)
 message(STATUS "CMAKE_PROGRAM_PATH   : ${CMAKE_INCLUDE_PATH}")
 set(CMAKE_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
 message(STATUS "CMAKE_PREFIX_PATH    : ${CMAKE_PREFIX_PATH}")
-#set(CMAKE_FIND_ROOT_PATH ${CMAKE_INSTALL_PREFIX} /usr /usr/local)
-#message(STATUS "CMAKE_FIND_ROOT_PATH : ${CMAKE_FIND_ROOT_PATH}")
 
 if (NOT CMAKE_CROSSCOMPILING)
 list(APPEND SYSTEM_INCLUDES ${CMAKE_INSTALL_PREFIX}/include)

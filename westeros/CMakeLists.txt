@@ -18,9 +18,6 @@ if ("${PLATFORM_LIB_LIB_DIR}" STREQUAL "")
     set(PLATFORM_LIB_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib)
 endif()
 
-#if (WESTEROS_PLATFORM_KYLIN)
-#    link_directories(${PLATFORM_LIB_LIB_DIR}/server ${PLATFORM_LIB_LIB_DIR} ${PLATFORM_LIB_LIB_DIR}/realtek)
-#endif()
 
 # Version for a.o. libwesteros_gl
 set(WESTEROS_DUMMY_VERSION_MAJOR 0)
